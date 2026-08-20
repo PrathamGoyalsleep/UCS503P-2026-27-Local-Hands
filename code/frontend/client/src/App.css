@@ -1,0 +1,27 @@
+#root {
+  min-height: 100vh;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  border-bottom: 1px solid #ddd;
+}
+
+nav a {
+  margin-left: 20px;
+  text-decoration: none;
+}
+
+main {
+  min-height: 70vh;
+  padding: 40px;
+}
+
+footer {
+  text-align: center;
+  padding: 20px;
+  border-top: 1px solid #ddd;
+}
