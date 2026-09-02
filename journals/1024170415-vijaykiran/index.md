@@ -3,7 +3,7 @@
 Roll No. 1024170415
 Name: Y Vijay Kiran
 
-+  [W1 : Project Setup & Requirements](./w1-ticket-resolution.md)
-+  [W2 : Designing MongoDB Schemas](./w2-ticket-resolution.md)
-+  [W3 : Implementing JWT Authentication APIs](./w3-ticket-resolution.md)
-
++  [Week 1 : Project Setup & Requirements](./week1-project-setup.md)
++  [Week 2 : Designing MongoDB Schemas](./week2-database-design.md)
++  [Week 3 : Implementing JWT Authentication APIs](./week3-authentication.md)
++  [Week 4 : Worker Registration APIs](./week4-worker-api.md)
