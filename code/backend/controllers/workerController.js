@@ -44,5 +44,24 @@ const getWorkerById = async (req, res) => {
     }
 };
 
-module.exports = { registerWorkerProfile, getWorkerById };
+const searchWorkers = async (req, res) => {
+    try {
+        const { category, location } = req.query;
+        let query = { status: 'approved' }; // Only show approved workers
+        
+        if (category) query.category = new RegExp(category, 'i');
+        if (location) query.location = new RegExp(location, 'i');
+
+        // Week 5: Ranking Logic - Sort by rating descending
+        const workers = await Worker.find(query)
+            .sort({ rating: -1 })
+            .populate('userId', 'name email');
+            
+        res.json(workers);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { registerWorkerProfile, getWorkerById, searchWorkers };
 
