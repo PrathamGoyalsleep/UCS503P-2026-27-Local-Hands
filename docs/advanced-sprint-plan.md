@@ -41,7 +41,7 @@
 
 ### Week 4 — Worker Registration & Admin Approval
 - **Goal:** Allow workers to apply, and admins to approve them.
-- **Backend (Vijay):** `POST /api/workers` (Registration). `PUT /api/admin/workers/:id/approve` (Admin verification). 
+- **Backend (Vijay):** `POST /api/workers` (Registration). `PUT /api/admin/workers/:id/approve` (Admin verification). Integrated **Twilio SMS** to automatically notify workers upon approval.
 
 ### Week 5 — Customer Search & Discovery
 - **Goal:** Customers can find approved workers.
