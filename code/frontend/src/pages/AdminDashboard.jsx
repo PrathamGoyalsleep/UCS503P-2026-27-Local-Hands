@@ -1,50 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getPendingWorkers, approveWorker, rejectWorker } from "../services/adminService";
+import { useAuth } from "../context/AuthContext";
 
 function AdminDashboard() {
-  const [workers, setWorkers] = useState([
-    {
-      id: 1,
-      name: "Rahul Sharma",
-      category: "Electrician",
-      experience: 5,
-      charges: 300,
-      location: "Patiala",
-      status: "pending",
-    },
-    {
-      id: 2,
-      name: "Aman Kumar",
-      category: "Plumber",
-      experience: 3,
-      charges: 250,
-      location: "Ludhiana",
-      status: "pending",
-    },
-    {
-      id: 3,
-      name: "Harpreet Singh",
-      category: "Carpenter",
-      experience: 7,
-      charges: 400,
-      location: "Chandigarh",
-      status: "pending",
-    },
-  ]);
+  const [workers, setWorkers] = useState([]);
+  const { token } = useAuth();
 
-  function handleApprove(id) {
-    setWorkers((previous) =>
-      previous.map((worker) =>
-        worker.id === id ? { ...worker, status: "approved" } : worker,
-      ),
-    );
+  const fetchWorkers = async () => {
+    try {
+      const data = await getPendingWorkers(token);
+      setWorkers(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchWorkers();
+  }, []);
+
+  async function handleApprove(id) {
+    try {
+      await approveWorker(id, token);
+      fetchWorkers();
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  function handleReject(id) {
-    setWorkers((previous) =>
-      previous.map((worker) =>
-        worker.id === id ? { ...worker, status: "rejected" } : worker,
-      ),
-    );
+  async function handleReject(id) {
+    try {
+      await rejectWorker(id, token);
+      fetchWorkers();
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   return (
@@ -65,23 +55,17 @@ function AdminDashboard() {
 
         <div className="admin-stat-card">
           <span>Pending</span>
-          <strong>
-            {workers.filter((worker) => worker.status === "pending").length}
-          </strong>
+          <strong>{workers.filter((w) => w.status === "pending").length}</strong>
         </div>
 
         <div className="admin-stat-card">
           <span>Approved</span>
-          <strong>
-            {workers.filter((worker) => worker.status === "approved").length}
-          </strong>
+          <strong>{workers.filter((w) => w.status === "approved").length}</strong>
         </div>
 
         <div className="admin-stat-card">
           <span>Rejected</span>
-          <strong>
-            {workers.filter((worker) => worker.status === "rejected").length}
-          </strong>
+          <strong>{workers.filter((w) => w.status === "rejected").length}</strong>
         </div>
       </div>
 
@@ -109,41 +93,22 @@ function AdminDashboard() {
 
             <tbody>
               {workers.map((worker) => (
-                <tr key={worker.id}>
-                  <td>
-                    <strong>{worker.name}</strong>
-                  </td>
-
+                <tr key={worker._id}>
+                  <td><strong>{worker.userId?.name || "Unknown"}</strong></td>
                   <td>{worker.category}</td>
-
                   <td>{worker.experience} years</td>
-
                   <td>₹{worker.charges}/hr</td>
-
                   <td>{worker.location}</td>
-
                   <td>
                     <span className={`status-badge ${worker.status}`}>
                       {worker.status}
                     </span>
                   </td>
-
                   <td>
                     {worker.status === "pending" ? (
                       <div className="admin-actions">
-                        <button
-                          className="approve-btn"
-                          onClick={() => handleApprove(worker.id)}
-                        >
-                          Approve
-                        </button>
-
-                        <button
-                          className="reject-btn"
-                          onClick={() => handleReject(worker.id)}
-                        >
-                          Reject
-                        </button>
+                        <button className="approve-btn" onClick={() => handleApprove(worker._id)}>Approve</button>
+                        <button className="reject-btn" onClick={() => handleReject(worker._id)}>Reject</button>
                       </div>
                     ) : (
                       <span className="action-completed">Reviewed</span>
@@ -153,6 +118,7 @@ function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          {workers.length === 0 && <p className="empty-state">No workers found.</p>}
         </div>
       </div>
     </div>

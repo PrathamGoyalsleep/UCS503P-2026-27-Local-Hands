@@ -18,3 +18,18 @@ export async function registerWorker(workerData, token) {
 
   return data;
 }
+
+export async function getWorkers(category = "", location = "") {
+  let queryStr = "";
+  if (category) queryStr += `category=${encodeURIComponent(category)}&`;
+  if (location) queryStr += `location=${encodeURIComponent(location)}&`;
+
+  const response = await fetch(`${API_URL}/api/workers?${queryStr}`);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch workers");
+  }
+
+  return data;
+}

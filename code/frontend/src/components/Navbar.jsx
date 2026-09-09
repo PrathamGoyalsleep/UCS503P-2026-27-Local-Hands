@@ -12,44 +12,29 @@ function Navbar() {
 
   return (
     <header className="navbar">
-      <div className="navbar-container">
-        <Link to="/" className="logo">
-          <span className="logo-mark">S</span>
-          <span>ServeConnect</span>
-        </Link>
+      <Link to="/" className="nav-logo">
+        <span className="nav-logo-icon">S</span>
+        ServeConnect
+      </Link>
 
-        <nav className="nav-links">
-          <Link to="/">Home</Link>
-          <Link to="/search">Find Workers</Link>
+      <nav className="nav-links">
+        <Link to="/">Home</Link>
+        <Link to="/search">Find Workers</Link>
+        {isAuthenticated && user?.role === "admin" && <Link to="/admin">Admin Panel</Link>}
+      </nav>
 
-          {isAuthenticated && <Link to="/worker/register">Join as Worker</Link>}
-        </nav>
-
-        <div className="nav-actions">
-          {!isAuthenticated ? (
-            <>
-              <Link to="/login" className="nav-login">
-                Login
-              </Link>
-
-              <Link to="/register" className="nav-register">
-                Get Started
-              </Link>
-            </>
-          ) : (
-            <>
-              <span className="nav-user">Hi, {user?.name || "User"}</span>
-
-              <button
-                type="button"
-                className="nav-logout"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </>
-          )}
-        </div>
+      <div className="nav-links">
+        {!isAuthenticated ? (
+          <>
+            <Link to="/login">Login</Link>
+            <Link to="/register" className="btn btn-primary">Get Started</Link>
+          </>
+        ) : (
+          <>
+            <span style={{fontWeight: 600}}>Hi, {user?.name || "User"}</span>
+            <button onClick={handleLogout} className="btn btn-secondary">Logout</button>
+          </>
+        )}
       </div>
     </header>
   );

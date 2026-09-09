@@ -1,142 +1,87 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 function Home() {
+  const navigate = useNavigate();
+  const [searchCat, setSearchCat] = useState("");
+  const [searchLoc, setSearchLoc] = useState("");
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    navigate(`/search?category=${searchCat}&location=${searchLoc}`);
+  };
+
   return (
     <div className="page">
       {/* Hero Section */}
       <section className="hero">
-        <div className="hero-content">
-          <span className="hero-badge">Trusted Local Services</span>
+        <span className="hero-badge">Professional Home Services</span>
+        
+        <h1>
+          Expert services, <span>delivered to your door.</span>
+        </h1>
+        
+        <p>
+          Book trusted, background-verified professionals for all your home needs. 
+          From cleaning to plumbing, we've got you covered.
+        </p>
 
-          <h1>
-            Find the right
-            <span> professional </span>
-            for the job.
-          </h1>
-
-          <p>
-            ServeConnect helps you discover trusted service workers in your
-            area. Search by service and location, explore profiles, and connect
-            directly.
-          </p>
-
-          <div className="hero-actions">
-            <Link to="/search" className="btn btn-primary">
-              Find a Worker
-              <span>→</span>
-            </Link>
-
-            <Link to="/worker/register" className="btn btn-secondary">
-              Join as a Worker
-            </Link>
-          </div>
-        </div>
-
-        <div className="hero-card">
-          <div className="hero-card-header">
-            <span className="status-dot"></span>
-            Available professionals
-          </div>
-
-          <div className="service-preview">
-            <div className="service-icon">⚡</div>
-
-            <div>
-              <h3>Electrician</h3>
-              <p>Patiala</p>
-            </div>
-
-            <span className="rating">★ 4.8</span>
-          </div>
-
-          <div className="service-preview">
-            <div className="service-icon">🔧</div>
-
-            <div>
-              <h3>Plumber</h3>
-              <p>Patiala</p>
-            </div>
-
-            <span className="rating">★ 4.7</span>
-          </div>
-
-          <div className="service-preview">
-            <div className="service-icon">🪚</div>
-
-            <div>
-              <h3>Carpenter</h3>
-              <p>Patiala</p>
-            </div>
-
-            <span className="rating">★ 4.6</span>
-          </div>
-        </div>
+        <form className="hero-search-container" onSubmit={handleSearch}>
+          <input 
+            type="text" 
+            className="hero-search-input" 
+            placeholder="What service do you need? (e.g. Plumber)" 
+            value={searchCat}
+            onChange={(e) => setSearchCat(e.target.value)}
+          />
+          <input 
+            type="text" 
+            className="hero-search-input" 
+            style={{ borderLeft: '1px solid var(--border-color)' }}
+            placeholder="Your Location" 
+            value={searchLoc}
+            onChange={(e) => setSearchLoc(e.target.value)}
+          />
+          <button type="submit" className="hero-search-btn">Search</button>
+        </form>
       </section>
 
-      {/* Services */}
+      {/* Services Grid */}
       <section className="section">
-        <div className="section-heading">
-          <span className="section-label">SERVICES</span>
-
-          <h2>Find professionals for everyday needs</h2>
-
-          <p>
-            Browse local service providers based on the work you need and their
-            location.
-          </p>
+        <div className="section-header text-center" style={{ textAlign: 'center' }}>
+          <h2>What are you looking for?</h2>
+          <p>Choose from our wide range of professional services.</p>
         </div>
 
-        <div className="service-grid">
-          <div className="service-card">
-            <div className="service-card-icon">⚡</div>
+        <div className="category-grid">
+          <div className="category-card" onClick={() => navigate('/search?category=Electrician')}>
+            <div className="category-icon">⚡</div>
             <h3>Electrician</h3>
-            <p>Electrical installation, repairs and maintenance.</p>
           </div>
 
-          <div className="service-card">
-            <div className="service-card-icon">🔧</div>
+          <div className="category-card" onClick={() => navigate('/search?category=Plumber')}>
+            <div className="category-icon">🔧</div>
             <h3>Plumber</h3>
-            <p>Plumbing repairs, installation and maintenance.</p>
           </div>
 
-          <div className="service-card">
-            <div className="service-card-icon">🪚</div>
+          <div className="category-card" onClick={() => navigate('/search?category=Carpenter')}>
+            <div className="category-icon">🪚</div>
             <h3>Carpenter</h3>
-            <p>Furniture, woodwork and carpentry services.</p>
           </div>
 
-          <div className="service-card">
-            <div className="service-card-icon">🎨</div>
+          <div className="category-card" onClick={() => navigate('/search?category=Painter')}>
+            <div className="category-icon">🎨</div>
             <h3>Painter</h3>
-            <p>Professional painting and finishing services.</p>
           </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="how-section">
-        <div className="section-heading">
-          <span className="section-label">HOW IT WORKS</span>
-          <h2>Simple. Local. Direct.</h2>
-        </div>
-
-        <div className="steps">
-          <div className="step">
-            <div className="step-number">01</div>
-            <h3>Search</h3>
-            <p>Choose a service and enter your location.</p>
+          
+          <div className="category-card" onClick={() => navigate('/search?category=Cleaning')}>
+            <div className="category-icon">🧹</div>
+            <h3>Cleaning</h3>
           </div>
-
-          <div className="step">
-            <div className="step-number">02</div>
-            <h3>Compare</h3>
-            <p>Explore worker profiles and available information.</p>
-          </div>
-
-          <div className="step">
-            <div className="step-number">03</div>
-            <h3>Connect</h3>
-            <p>Open a worker profile and connect directly.</p>
+          
+          <div className="category-card" onClick={() => navigate('/search?category=AC Repair')}>
+            <div className="category-icon">❄️</div>
+            <h3>AC Repair</h3>
           </div>
         </div>
       </section>
