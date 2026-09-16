@@ -8,15 +8,20 @@ import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
 
+import { AuthProvider } from "./context/AuthContext";
+import { LocationProvider } from "./context/LocationContext";
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Search from "./pages/Search";
 import WorkerProfile from "./pages/WorkerProfile";
 import WorkerRegistration from "./pages/WorkerRegistration";
+import Bookings from "./pages/Bookings";
 
 function App() {
   return (
+    <LocationProvider>
     <BrowserRouter>
       <Navbar />
 
@@ -31,6 +36,15 @@ function App() {
           <Route path="/search" element={<Search />} />
 
           <Route path="/worker/:id" element={<WorkerProfile />} />
+          
+          <Route 
+            path="/bookings" 
+            element={
+              <ProtectedRoute>
+                <Bookings />
+              </ProtectedRoute>
+            } 
+          />
 
           <Route
             path="/admin"
@@ -54,6 +68,7 @@ function App() {
 
       <Footer />
     </BrowserRouter>
+    </LocationProvider>
   );
 }
 
