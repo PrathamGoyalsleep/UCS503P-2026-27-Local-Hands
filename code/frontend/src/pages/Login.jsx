@@ -5,7 +5,7 @@ import { loginUser } from "../services/authService";
 
 const DEMO_ACCOUNTS = [
   {
-    label: "Login as Admin",
+    label: "Admin",
     desc: "Full admin access",
     email: "admin@serveconnect.com",
     password: "Admin@1234",
@@ -19,13 +19,27 @@ const DEMO_ACCOUNTS = [
     ),
   },
   {
-    label: "Login as Customer",
+    label: "Vijay (Customer)",
     desc: "Book services",
     email: "vijayakiranyarra@gmail.com",
-    password: "123456",
+    password: "password123",
     color: "#059669",
     bg: "#ECFDF5",
     border: "#6EE7B7",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+      </svg>
+    ),
+  },
+  {
+    label: "Keshav (Customer)",
+    desc: "Book services",
+    email: "kgoyal1_be24@thapar.edu",
+    password: "password123",
+    color: "#7C3AED",
+    bg: "#F5F3FF",
+    border: "#DDD6FE",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
@@ -84,7 +98,7 @@ function Login() {
           <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.75rem", textAlign: "center" }}>
             Quick Demo Access
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
             {DEMO_ACCOUNTS.map((acc) => (
               <button
                 key={acc.label}
@@ -110,7 +124,7 @@ function Login() {
         {/* ── Divider ── */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
           <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
-          <span style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "#4b5563", whiteSpace: "nowrap" }}>or login manually</span>
+          <span style={{ fontSize: "0.8rem", color: "#9ca3af", whiteSpace: "nowrap" }}>or login manually</span>
           <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
         </div>
 
