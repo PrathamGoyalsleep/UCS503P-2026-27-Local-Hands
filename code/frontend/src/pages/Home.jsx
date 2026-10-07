@@ -93,14 +93,14 @@ function Home() {
         <span className="hero-badge">Trusted Home Services Platform</span>
         <h1>
           Expert professionals,<br />
-          <span>at your doorstep.</span>
+          <span style={{ color: "#1d4ed8" }}>at your doorstep.</span>
         </h1>
-        <p>
+        <p style={{ color: "#374151" }}>
           Book background-verified electricians, plumbers, carpenters and more.
           Instant booking. Transparent pricing. Quality guaranteed.
         </p>
-        <form className="hero-search-container" onSubmit={handleSearch}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "1rem", flexShrink: 0 }}>
+        <form className="hero-search-container" onSubmit={handleSearch} role="search" aria-label="Find local service professionals">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "1rem", flexShrink: 0 }} aria-hidden="true">
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
           <input
@@ -109,18 +109,19 @@ function Home() {
             placeholder="Search for a service — plumber, electrician..."
             value={searchCat}
             onChange={(e) => setSearchCat(e.target.value)}
+            aria-label="Search service category"
           />
           <button type="submit" className="hero-search-btn">Search</button>
         </form>
       </section>
 
       {/* ── Stats Bar ── */}
-      <section style={{ background: "white", borderBottom: "1px solid var(--border)", padding: "1.75rem 5%", userSelect: "none", cursor: "default", caretColor: "transparent" }}>
-        <div className="stats-bar-grid" style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", textAlign: "center", userSelect: "none", cursor: "default", caretColor: "transparent" }}>
-          {stats.map((s, i) => (
-            <div key={s.label} style={{ borderRight: i < stats.length - 1 ? "1px solid var(--border)" : "none", padding: "0.5rem 0.75rem", userSelect: "none", cursor: "default", caretColor: "transparent" }}>
-              <div style={{ fontSize: "var(--fs-xl, 1.75rem)", fontWeight: 900, color: "var(--primary)", userSelect: "none", cursor: "default" }}>{s.value}</div>
-              <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--text-muted)", marginTop: "0.2rem", fontWeight: 500, userSelect: "none", cursor: "default" }}>{s.label}</div>
+      <section className="stats-bar-section" aria-label="Key platform metrics">
+        <div className="stats-bar-grid">
+          {stats.map((s) => (
+            <div key={s.label} className="stat-card">
+              <div className="stat-value">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
             </div>
           ))}
         </div>
@@ -139,13 +140,22 @@ function Home() {
             <div
               key={svc.name}
               className="category-card"
+              role="button"
+              tabIndex={0}
+              aria-label={`Browse ${svc.name} professionals`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(`/search?category=${encodeURIComponent(svc.name)}`);
+                }
+              }}
               onClick={() => navigate(`/search?category=${encodeURIComponent(svc.name)}`)}
             >
-              <div className="category-icon" style={{ color: svc.color, background: svc.bg }}>
+              <div className="category-icon" style={{ color: svc.color, background: svc.bg }} aria-hidden="true">
                 {svc.icon}
               </div>
               <h3>{svc.name}</h3>
-              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>{svc.desc}</p>
+              <p style={{ fontSize: "0.875rem", color: "#4b5563", marginTop: "0.3rem" }}>{svc.desc}</p>
             </div>
           ))}
         </div>
@@ -159,18 +169,18 @@ function Home() {
             <h2>Book a service in 3 simple steps</h2>
             <p>Fast, transparent and reliable — every time.</p>
           </div>
-          <div className="how-it-works-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", textAlign: "center" }}>
+          <div className="how-it-works-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", textAlign: "left" }}>
             {[
-              { step: "01", title: "Choose a Service", desc: "Select from our range of professional home services and pick your location.", color: "#3B82F6" },
-              { step: "02", title: "Pick Your Expert", desc: "Browse verified professionals, compare ratings and hourly pricing.", color: "#8B5CF6" },
-              { step: "03", title: "Confirm & Relax", desc: "Book a time slot instantly. Our expert arrives at your door on time.", color: "#10B981" },
+              { step: "01", title: "Choose a Service", desc: "Select from our range of professional home services and pick your location.", color: "#1d4ed8" },
+              { step: "02", title: "Pick Your Expert", desc: "Browse verified professionals, compare ratings and hourly pricing.", color: "#7c3aed" },
+              { step: "03", title: "Confirm & Relax", desc: "Book a time slot instantly. Our expert arrives at your door on time.", color: "#047857" },
             ].map((item) => (
-              <div key={item.step} style={{ padding: "2rem", borderRadius: "16px", border: "1px solid var(--border)", background: "white", userSelect: "none", cursor: "default", caretColor: "transparent" }}>
-                <div style={{ width: "44px", height: "44px", background: item.color, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "1rem", marginBottom: "1.25rem", userSelect: "none" }}>
+              <div key={item.step} style={{ padding: "2rem", borderRadius: "16px", border: "1px solid var(--border)", background: "white" }}>
+                <div style={{ width: "44px", height: "44px", background: item.color, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#ffffff", fontWeight: 800, fontSize: "1rem", marginBottom: "1.25rem" }} aria-label={`Step ${item.step}`}>
                   {item.step}
                 </div>
-                <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem", color: "#1a1a2e", userSelect: "none" }}>{item.title}</h3>
-                <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", lineHeight: 1.6, userSelect: "none" }}>{item.desc}</p>
+                <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem", color: "#111827" }}>{item.title}</h3>
+                <p style={{ fontSize: "0.875rem", color: "#4b5563", lineHeight: 1.6 }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -178,10 +188,10 @@ function Home() {
       </section>
 
       {/* ── CTA ── */}
-      <section style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)", padding: "5rem 5%", textAlign: "center" }}>
-        <h2 style={{ fontSize: "2.25rem", fontWeight: 800, color: "white", marginBottom: "1rem" }}>Are you a service professional?</h2>
-        <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.1rem", marginBottom: "2rem" }}>Join thousands of experts earning more with ServeConnect.</p>
-        <a href="/worker/register" style={{ background: "white", color: "var(--primary)", padding: "0.9rem 2.5rem", borderRadius: "9999px", fontWeight: 700, fontSize: "1rem", display: "inline-block" }}>
+      <section style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)", padding: "5rem 5%", textAlign: "center" }}>
+        <h2 style={{ fontSize: "var(--fs-2xl, 2.25rem)", fontWeight: 800, color: "#ffffff", marginBottom: "1rem" }}>Are you a service professional?</h2>
+        <p style={{ color: "#f8fafc", fontSize: "1.1rem", marginBottom: "2rem" }}>Join thousands of experts earning more with ServeConnect.</p>
+        <a href="/worker/register" style={{ background: "white", color: "#1d4ed8", padding: "0.9rem 2.5rem", borderRadius: "9999px", fontWeight: 700, fontSize: "1rem", display: "inline-block" }}>
           Register as a Professional
         </a>
       </section>

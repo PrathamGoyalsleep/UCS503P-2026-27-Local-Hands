@@ -18,6 +18,7 @@ import Search from "./pages/Search";
 import WorkerProfile from "./pages/WorkerProfile";
 import WorkerRegistration from "./pages/WorkerRegistration";
 import Bookings from "./pages/Bookings";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -63,6 +64,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* 404 Catch-All */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 

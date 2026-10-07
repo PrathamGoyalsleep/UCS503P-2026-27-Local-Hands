@@ -110,20 +110,20 @@ function Login() {
         {/* ── Divider ── */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
           <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
-          <span style={{ fontSize: "0.8rem", color: "#9ca3af", whiteSpace: "nowrap" }}>or login manually</span>
+          <span style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "#4b5563", whiteSpace: "nowrap" }}>or login manually</span>
           <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
         </div>
 
-        {error && <div className="form-error">{error}</div>}
+        {error && <div className="form-error" role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email address</label>
-            <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" />
+            <input id="email" name="email" type="email" autoComplete="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" required />
           </div>
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input id="password" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Enter your password" />
+            <input id="password" name="password" type="password" autoComplete="current-password" value={formData.password} onChange={handleChange} placeholder="Enter your password" required />
           </div>
           <button type="submit" className="btn btn-primary full-width" disabled={loading}>
             {loading ? "Logging in..." : "Login"}

@@ -93,8 +93,8 @@ function Search() {
               <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#1a1a2e", marginBottom: "0.25rem" }}>
                 Find a Professional
               </h1>
-              <p style={{ color: "var(--text-muted)" }}>
-                Showing verified workers in <strong>{location}</strong>
+              <p style={{ color: "#4b5563", fontSize: "0.875rem" }}>
+                Showing verified professionals in <strong>{location}</strong>
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
@@ -102,6 +102,7 @@ function Search() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
+                  aria-label="Filter by service category"
                   style={{ appearance: "none", background: "white", border: "1.5px solid var(--border)", borderRadius: "10px", padding: "0.65rem 2.5rem 0.65rem 1rem", fontSize: "0.95rem", fontWeight: 500, color: "#1a1a2e", cursor: "pointer", outline: "none" }}
                 >
                   <option value="">All Services</option>
@@ -112,7 +113,7 @@ function Search() {
                   <option value="Cleaning">Cleaning</option>
                   <option value="AC Repair">AC Repair</option>
                 </select>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#9ca3af" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#9ca3af" }}>
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </div>
