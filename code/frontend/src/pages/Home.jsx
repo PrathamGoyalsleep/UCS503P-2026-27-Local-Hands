@@ -115,12 +115,12 @@ function Home() {
       </section>
 
       {/* ── Stats Bar ── */}
-      <section style={{ background: "white", borderBottom: "1px solid var(--border)", padding: "2rem 5%" }}>
-        <div style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", textAlign: "center" }}>
+      <section style={{ background: "white", borderBottom: "1px solid var(--border)", padding: "1.75rem 5%", userSelect: "none", cursor: "default", caretColor: "transparent" }}>
+        <div className="stats-bar-grid" style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", textAlign: "center", userSelect: "none", cursor: "default", caretColor: "transparent" }}>
           {stats.map((s, i) => (
-            <div key={s.label} style={{ borderRight: i < stats.length - 1 ? "1px solid var(--border)" : "none", padding: "0.5rem 1rem" }}>
-              <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--primary)" }}>{s.value}</div>
-              <div style={{ fontSize: "0.83rem", color: "var(--text-muted)", marginTop: "0.25rem", fontWeight: 500 }}>{s.label}</div>
+            <div key={s.label} style={{ borderRight: i < stats.length - 1 ? "1px solid var(--border)" : "none", padding: "0.5rem 0.75rem", userSelect: "none", cursor: "default", caretColor: "transparent" }}>
+              <div style={{ fontSize: "var(--fs-xl, 1.75rem)", fontWeight: 900, color: "var(--primary)", userSelect: "none", cursor: "default" }}>{s.value}</div>
+              <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--text-muted)", marginTop: "0.2rem", fontWeight: 500, userSelect: "none", cursor: "default" }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -159,17 +159,18 @@ function Home() {
             <h2>Book a service in 3 simple steps</h2>
             <p>Fast, transparent and reliable — every time.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", textAlign: "center" }}>
+          <div className="how-it-works-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", textAlign: "center" }}>
             {[
               { step: "01", title: "Choose a Service", desc: "Select from our range of professional home services and pick your location.", color: "#3B82F6" },
               { step: "02", title: "Pick Your Expert", desc: "Browse verified professionals, compare ratings and hourly pricing.", color: "#8B5CF6" },
               { step: "03", title: "Confirm & Relax", desc: "Book a time slot instantly. Our expert arrives at your door on time.", color: "#10B981" },
             ].map((item) => (
-              <div key={item.step} style={{ padding: "2rem", borderRadius: "16px", border: "1px solid var(--border)", position: "relative" }}>
-                <div style={{ fontSize: "3rem", fontWeight: 900, color: item.color, opacity: 0.12, position: "absolute", top: "1rem", right: "1.5rem", lineHeight: 1 }}>{item.step}</div>
-                <div style={{ width: "48px", height: "48px", background: item.color, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "1.1rem", marginBottom: "1rem" }}>{item.step}</div>
-                <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "0.5rem", color: "#1a1a2e" }}>{item.title}</h3>
-                <p style={{ fontSize: "0.9rem", color: "var(--text-muted)", lineHeight: 1.6 }}>{item.desc}</p>
+              <div key={item.step} style={{ padding: "2rem", borderRadius: "16px", border: "1px solid var(--border)", background: "white", userSelect: "none", cursor: "default", caretColor: "transparent" }}>
+                <div style={{ width: "44px", height: "44px", background: item.color, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "1rem", marginBottom: "1.25rem", userSelect: "none" }}>
+                  {item.step}
+                </div>
+                <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem", color: "#1a1a2e", userSelect: "none" }}>{item.title}</h3>
+                <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", lineHeight: 1.6, userSelect: "none" }}>{item.desc}</p>
               </div>
             ))}
           </div>
