@@ -18,18 +18,11 @@ function Bookings() {
   const [filter, setFilter] = useState("all");
 
   const fetchBookings = async () => {
-    if (!token) {
-      setBookings([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
     try {
       const data = await getMyBookings(token);
-      setBookings(Array.isArray(data) ? data : []);
+      setBookings(data);
     } catch (err) {
-      console.error("Failed to load bookings:", err);
-      setBookings([]);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -37,7 +30,7 @@ function Bookings() {
 
   useEffect(() => {
     fetchBookings();
-  }, [token, user]);
+  }, []);
 
   const handleStatusUpdate = async (id, status) => {
     try {

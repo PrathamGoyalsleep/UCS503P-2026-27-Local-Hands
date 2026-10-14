@@ -1,17 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../services/authService";
-import { useAuth } from "../context/AuthContext";
 
 function Register() {
   const navigate = useNavigate();
-  const { logout, isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      logout();
-    }
-  }, []);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -111,11 +103,9 @@ function Register() {
               id="name"
               name="name"
               type="text"
-              autoComplete="name"
               value={formData.name}
               onChange={handleChange}
               placeholder="Enter your full name"
-              required
             />
           </div>
 
@@ -126,11 +116,9 @@ function Register() {
               id="register-email"
               name="email"
               type="email"
-              autoComplete="email"
               value={formData.email}
               onChange={handleChange}
               placeholder="you@example.com"
-              required
             />
           </div>
 
@@ -141,11 +129,9 @@ function Register() {
               id="register-password"
               name="password"
               type="password"
-              autoComplete="new-password"
               value={formData.password}
               onChange={handleChange}
               placeholder="Create a password"
-              required
             />
           </div>
 

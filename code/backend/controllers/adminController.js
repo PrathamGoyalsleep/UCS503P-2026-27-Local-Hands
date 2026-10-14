@@ -1,5 +1,5 @@
 const Worker = require("../models/Worker");
-const { sendSMS } = require("../utils/smsService");
+const { sendWorkerApprovalEmail } = require("../utils/emailService");
 
 // GET /api/admin/workers
 const getAllWorkers = async (req, res) => {
@@ -18,13 +18,12 @@ const approveWorker = async (req, res) => {
             req.params.id,
             { status: "approved" },
             { new: true }
-        ).populate('userId', 'name');
+        ).populate('userId', 'name email');
         
         if (!worker) return res.status(404).json({ message: "Worker not found" });
 
-        // Send SMS Notification to Worker
-        const message = `Hi ${worker.userId.name}, your profile on ServeConnect has been APPROVED! Customers can now find and book your services.`;
-        await sendSMS(worker.phone, message);
+        // Automatically generate and send approval email to the worker
+        await sendWorkerApprovalEmail(worker);
 
         res.json(worker);
     } catch (error) {

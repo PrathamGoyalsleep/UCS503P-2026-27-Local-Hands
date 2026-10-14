@@ -90,7 +90,7 @@ function WorkerRegistration() {
           <div style={{ width: "80px", height: "80px", background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem", fontSize: "2rem" }}>✓</div>
           <h2 style={{ fontSize: "1.8rem", fontWeight: 700, marginBottom: "1rem", color: "#1a1a2e" }}>Application Submitted!</h2>
           <p style={{ color: "#6b7280", lineHeight: 1.7, marginBottom: "2rem" }}>
-            Your profile has been submitted for admin review. You'll receive an <strong>SMS</strong> on <strong>{formData.phone}</strong> once you're approved and visible to customers.
+            Your profile has been submitted for admin review. You'll receive an <strong>Email notification</strong> on your registered email address once you're approved and visible to customers.
           </p>
           <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "12px", padding: "1rem", marginBottom: "2rem", fontSize: "0.9rem", color: "#15803d" }}>
             ⏱ Average review time: <strong>24–48 hours</strong>
@@ -274,7 +274,7 @@ function WorkerRegistration() {
 
               <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "10px", padding: "1rem 1.25rem" }}>
                 <p style={{ color: "#92400e", fontSize: "0.9rem", margin: 0 }}>
-                  ⚠ After submission, your profile will be <strong>reviewed by our admin team</strong>. You'll receive an SMS notification on your phone once approved.
+                  ⚠ After submission, your profile will be <strong>reviewed by our admin team</strong>. You'll receive an email notification once approved.
                 </p>
               </div>
             </div>
@@ -302,7 +302,7 @@ function WorkerRegistration() {
 
         {/* Trust Badges */}
         <div style={{ display: "flex", justifyContent: "center", gap: "2rem", marginTop: "2rem", flexWrap: "wrap" }}>
-          {["🔒 Secure & Private", "📱 SMS Notification on Approval", "✅ Admin Verified Profiles"].map(badge => (
+          {["🔒 Secure & Private", "✉️ Email Notification on Approval", "✅ Admin Verified Profiles"].map(badge => (
             <span key={badge} style={{ color: "#6b7280", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>{badge}</span>
           ))}
         </div>

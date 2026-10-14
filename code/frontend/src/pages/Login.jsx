@@ -5,7 +5,7 @@ import { loginUser } from "../services/authService";
 
 const DEMO_ACCOUNTS = [
   {
-    label: "Admin",
+    label: "Login as Admin",
     desc: "Full admin access",
     email: "admin@serveconnect.com",
     password: "Admin@1234",
@@ -19,27 +19,13 @@ const DEMO_ACCOUNTS = [
     ),
   },
   {
-    label: "Vijay (Customer)",
+    label: "Login as Customer",
     desc: "Book services",
     email: "vijayakiranyarra@gmail.com",
-    password: "password123",
+    password: "123456",
     color: "#059669",
     bg: "#ECFDF5",
     border: "#6EE7B7",
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
-  },
-  {
-    label: "Keshav (Customer)",
-    desc: "Book services",
-    email: "kgoyal1_be24@thapar.edu",
-    password: "password123",
-    color: "#7C3AED",
-    bg: "#F5F3FF",
-    border: "#DDD6FE",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
@@ -98,7 +84,7 @@ function Login() {
           <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.75rem", textAlign: "center" }}>
             Quick Demo Access
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
             {DEMO_ACCOUNTS.map((acc) => (
               <button
                 key={acc.label}
@@ -128,16 +114,16 @@ function Login() {
           <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
         </div>
 
-        {error && <div className="form-error" role="alert">{error}</div>}
+        {error && <div className="form-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email address</label>
-            <input id="email" name="email" type="email" autoComplete="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" required />
+            <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" />
           </div>
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input id="password" name="password" type="password" autoComplete="current-password" value={formData.password} onChange={handleChange} placeholder="Enter your password" required />
+            <input id="password" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Enter your password" />
           </div>
           <button type="submit" className="btn btn-primary full-width" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
