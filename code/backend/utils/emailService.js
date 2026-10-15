@@ -5,12 +5,15 @@ const nodemailer = require("nodemailer");
  * Uses environment variables if configured, otherwise returns null for safe simulation.
  */
 function getTransporter() {
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASS;
+    const rawUser = process.env.EMAIL_USER;
+    const rawPass = process.env.EMAIL_PASS;
 
-    if (!user || !pass) {
+    if (!rawUser || !rawPass) {
         return null;
     }
+
+    const user = rawUser.trim();
+    const pass = rawPass.trim().replace(/\s+/g, "");
 
     if (process.env.EMAIL_SERVICE) {
         return nodemailer.createTransport({
