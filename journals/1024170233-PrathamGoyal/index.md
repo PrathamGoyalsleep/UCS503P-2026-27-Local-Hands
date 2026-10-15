@@ -8,4 +8,5 @@ Role: Team Lead / Integration
 +  [W2 : System Design & API Definitions](./w2-ticket-resolution.md)
 +  [W3 : Defining & Testing Authentication Flows](./w3-ticket-resolution.md)
 +  [W4 : Validation & Admin Rules](./w4-ticket-resolution.md)
++  [W5 : Ranking Logic & Search Tests](./w5-ticket-resolution.md)
 
