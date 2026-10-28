@@ -2,16 +2,34 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { registerWorker } from "../services/workerService";
 import { useNavigate } from "react-router-dom";
+import {
+  Zap,
+  Wrench,
+  Hammer,
+  Paintbrush,
+  Sparkles,
+  Snowflake,
+  Check,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Lock,
+  Mail,
+  ShieldCheck,
+  IndianRupee,
+} from "lucide-react";
 
 const steps = ["Personal Info", "Professional Info", "Review & Submit"];
 
 const categories = [
-  { value: "Electrician", icon: "⚡", desc: "Wiring, fuse boxes, appliances" },
-  { value: "Plumber", icon: "🔧", desc: "Pipes, leaks, installations" },
-  { value: "Carpenter", icon: "🪚", desc: "Furniture, doors, woodwork" },
-  { value: "Painter", icon: "🎨", desc: "Interior, exterior, walls" },
-  { value: "Cleaning", icon: "✨", desc: "Deep clean, sanitization" },
-  { value: "AC Repair", icon: "❄️", desc: "Service, gas refill, repair" },
+  { value: "Electrician", Icon: Zap, desc: "Wiring, fuse boxes, appliances" },
+  { value: "Plumber", Icon: Wrench, desc: "Pipes, leaks, installations" },
+  { value: "Carpenter", Icon: Hammer, desc: "Furniture, doors, woodwork" },
+  { value: "Painter", Icon: Paintbrush, desc: "Interior, exterior, walls" },
+  { value: "Cleaning", Icon: Sparkles, desc: "Deep clean, sanitization" },
+  { value: "AC Repair", Icon: Snowflake, desc: "Service, gas refill, repair" },
 ];
 
 function WorkerRegistration() {
@@ -87,13 +105,16 @@ function WorkerRegistration() {
     return (
       <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
         <div style={{ background: "white", borderRadius: "20px", padding: "3rem", textAlign: "center", maxWidth: "500px", boxShadow: "0 10px 40px rgba(0,0,0,0.08)" }}>
-          <div style={{ width: "80px", height: "80px", background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem", fontSize: "2rem" }}>✓</div>
+          <div style={{ width: "80px", height: "80px", background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+            <Check size={42} color="white" />
+          </div>
           <h2 style={{ fontSize: "1.8rem", fontWeight: 700, marginBottom: "1rem", color: "#1a1a2e" }}>Application Submitted!</h2>
           <p style={{ color: "#6b7280", lineHeight: 1.7, marginBottom: "2rem" }}>
             Your profile has been submitted for admin review. You'll receive an <strong>Email notification</strong> on your registered email address once you're approved and visible to customers.
           </p>
-          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "12px", padding: "1rem", marginBottom: "2rem", fontSize: "0.9rem", color: "#15803d" }}>
-            ⏱ Average review time: <strong>24–48 hours</strong>
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "12px", padding: "1rem", marginBottom: "2rem", fontSize: "0.9rem", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem" }}>
+            <Clock size={16} />
+            <span>Average review time: <strong>24–48 hours</strong></span>
           </div>
           <button onClick={() => navigate("/")} className="btn btn-primary" style={{ width: "100%" }}>Back to Home</button>
         </div>
@@ -130,7 +151,7 @@ function WorkerRegistration() {
                   boxShadow: i === step ? "0 0 0 4px rgba(99,102,241,0.15)" : "none",
                   transition: "all 0.3s"
                 }}>
-                  {i < step ? "✓" : i + 1}
+                  {i < step ? <Check size={16} color="white" /> : i + 1}
                 </div>
                 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: i === step ? "var(--primary)" : "#9ca3af", whiteSpace: "nowrap" }}>{label}</span>
               </div>
@@ -163,7 +184,7 @@ function WorkerRegistration() {
                       onBlur={e => e.target.style.borderColor = errors.phone ? "#EF4444" : "#e5e7eb"}
                     />
                   </div>
-                  {errors.phone && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.4rem" }}>⚠ {errors.phone}</p>}
+                  {errors.phone && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.4rem", display: "flex", alignItems: "center", gap: "0.3rem" }}><AlertTriangle size={13} /> {errors.phone}</p>}
                 </div>
 
                 <div style={{ gridColumn: "1/-1" }}>
@@ -173,7 +194,7 @@ function WorkerRegistration() {
                     onFocus={e => e.target.style.borderColor = "var(--primary)"}
                     onBlur={e => e.target.style.borderColor = errors.location ? "#EF4444" : "#e5e7eb"}
                   />
-                  {errors.location && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.4rem" }}>⚠ {errors.location}</p>}
+                  {errors.location && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.4rem", display: "flex", alignItems: "center", gap: "0.3rem" }}><AlertTriangle size={13} /> {errors.location}</p>}
                 </div>
 
                 <div style={{ gridColumn: "1/-1" }}>
@@ -199,20 +220,26 @@ function WorkerRegistration() {
               <div style={{ marginBottom: "1.5rem" }}>
                 <label style={{ display: "block", fontWeight: 600, marginBottom: "0.75rem", fontSize: "0.9rem", color: "#374151" }}>Service Category <span style={{ color: "#EF4444" }}>*</span></label>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
-                  {categories.map((cat) => (
-                    <div key={cat.value} onClick={() => { setFormData(p => ({ ...p, category: cat.value })); setErrors(p => ({ ...p, category: "" })); }}
-                      style={{
-                        padding: "1rem", border: formData.category === cat.value ? "2px solid var(--primary)" : "2px solid #e5e7eb",
-                        borderRadius: "12px", cursor: "pointer", transition: "all 0.2s", textAlign: "center",
-                        background: formData.category === cat.value ? "rgba(99,102,241,0.05)" : "white"
-                      }}>
-                      <div style={{ fontSize: "1.8rem", marginBottom: "0.4rem" }}>{cat.icon}</div>
-                      <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#1a1a2e", marginBottom: "0.2rem" }}>{cat.value}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{cat.desc}</div>
-                    </div>
-                  ))}
+                  {categories.map((cat) => {
+                    const CatIcon = cat.Icon;
+                    const isSelected = formData.category === cat.value;
+                    return (
+                      <div key={cat.value} onClick={() => { setFormData(p => ({ ...p, category: cat.value })); setErrors(p => ({ ...p, category: "" })); }}
+                        style={{
+                          padding: "1rem", border: isSelected ? "2px solid var(--primary)" : "2px solid #e5e7eb",
+                          borderRadius: "12px", cursor: "pointer", transition: "all 0.2s", textAlign: "center",
+                          background: isSelected ? "rgba(99,102,241,0.05)" : "white"
+                        }}>
+                        <div style={{ marginBottom: "0.5rem", display: "flex", justifyContent: "center" }}>
+                          <CatIcon size={26} color={isSelected ? "var(--primary)" : "#6B7280"} />
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#1a1a2e", marginBottom: "0.2rem" }}>{cat.value}</div>
+                        <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{cat.desc}</div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {errors.category && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.5rem" }}>⚠ {errors.category}</p>}
+                {errors.category && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.5rem", display: "flex", alignItems: "center", gap: "0.3rem" }}><AlertTriangle size={13} /> {errors.category}</p>}
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
@@ -223,7 +250,7 @@ function WorkerRegistration() {
                     onFocus={e => e.target.style.borderColor = "var(--primary)"}
                     onBlur={e => e.target.style.borderColor = errors.experience ? "#EF4444" : "#e5e7eb"}
                   />
-                  {errors.experience && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.4rem" }}>⚠ {errors.experience}</p>}
+                  {errors.experience && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.4rem", display: "flex", alignItems: "center", gap: "0.3rem" }}><AlertTriangle size={13} /> {errors.experience}</p>}
                 </div>
 
                 <div>
@@ -236,7 +263,7 @@ function WorkerRegistration() {
                       onBlur={e => e.target.style.borderColor = errors.charges ? "#EF4444" : "#e5e7eb"}
                     />
                   </div>
-                  {errors.charges && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.4rem" }}>⚠ {errors.charges}</p>}
+                  {errors.charges && <p style={{ color: "#EF4444", fontSize: "0.8rem", marginTop: "0.4rem", display: "flex", alignItems: "center", gap: "0.3rem" }}><AlertTriangle size={13} /> {errors.charges}</p>}
                 </div>
               </div>
             </div>
@@ -272,9 +299,10 @@ function WorkerRegistration() {
                 </div>
               )}
 
-              <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "10px", padding: "1rem 1.25rem" }}>
-                <p style={{ color: "#92400e", fontSize: "0.9rem", margin: 0 }}>
-                  ⚠ After submission, your profile will be <strong>reviewed by our admin team</strong>. You'll receive an email notification once approved.
+              <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "10px", padding: "1rem 1.25rem", display: "flex", alignItems: "flex-start", gap: "0.6rem" }}>
+                <AlertTriangle size={18} color="#92400e" style={{ flexShrink: 0, marginTop: "0.15rem" }} />
+                <p style={{ color: "#92400e", fontSize: "0.9rem", margin: 0, lineHeight: 1.5 }}>
+                  After submission, your profile will be <strong>reviewed by our admin team</strong>. You'll receive an email notification once approved.
                 </p>
               </div>
             </div>
@@ -283,18 +311,21 @@ function WorkerRegistration() {
           {/* Footer Buttons */}
           <div style={{ padding: "1.5rem 2.5rem", borderTop: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", background: "#fafafa" }}>
             {step > 0 ? (
-              <button onClick={() => setStep(s => s - 1)} style={{ padding: "0.75rem 1.5rem", border: "1.5px solid #e5e7eb", borderRadius: "10px", background: "white", cursor: "pointer", fontWeight: 600, color: "#374151" }}>
-                ← Back
+              <button onClick={() => setStep(s => s - 1)} style={{ padding: "0.75rem 1.5rem", border: "1.5px solid #e5e7eb", borderRadius: "10px", background: "white", cursor: "pointer", fontWeight: 600, color: "#374151", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                <ArrowLeft size={16} />
+                <span>Back</span>
               </button>
             ) : <div />}
             
             {step < 2 ? (
-              <button onClick={nextStep} className="btn btn-primary" style={{ padding: "0.75rem 2rem", borderRadius: "10px", fontWeight: 600 }}>
-                Continue →
+              <button onClick={nextStep} className="btn btn-primary" style={{ padding: "0.75rem 2rem", borderRadius: "10px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                <span>Continue</span>
+                <ArrowRight size={16} />
               </button>
             ) : (
-              <button onClick={handleSubmit} className="btn btn-primary" style={{ padding: "0.75rem 2rem", borderRadius: "10px", fontWeight: 700, background: "linear-gradient(135deg, #10B981, #059669)" }}>
-                Submit Application ✓
+              <button onClick={handleSubmit} className="btn btn-primary" style={{ padding: "0.75rem 2rem", borderRadius: "10px", fontWeight: 700, background: "linear-gradient(135deg, #10B981, #059669)", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                <CheckCircle2 size={16} />
+                <span>Submit Application</span>
               </button>
             )}
           </div>
@@ -302,9 +333,18 @@ function WorkerRegistration() {
 
         {/* Trust Badges */}
         <div style={{ display: "flex", justifyContent: "center", gap: "2rem", marginTop: "2rem", flexWrap: "wrap" }}>
-          {["🔒 Secure & Private", "✉️ Email Notification on Approval", "✅ Admin Verified Profiles"].map(badge => (
-            <span key={badge} style={{ color: "#6b7280", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>{badge}</span>
-          ))}
+          <span style={{ color: "#6b7280", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <Lock size={15} color="#059669" />
+            <span>Secure & Private</span>
+          </span>
+          <span style={{ color: "#6b7280", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <Mail size={15} color="#2563EB" />
+            <span>Email Notification on Approval</span>
+          </span>
+          <span style={{ color: "#6b7280", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <ShieldCheck size={15} color="#7C3AED" />
+            <span>Admin Verified Profiles</span>
+          </span>
         </div>
       </div>
     </div>

@@ -8,7 +8,6 @@ import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
 
-import { AuthProvider } from "./context/AuthContext";
 import { LocationProvider } from "./context/LocationContext";
 
 import Home from "./pages/Home";
@@ -18,6 +17,7 @@ import Search from "./pages/Search";
 import WorkerProfile from "./pages/WorkerProfile";
 import WorkerRegistration from "./pages/WorkerRegistration";
 import Bookings from "./pages/Bookings";
+import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -45,6 +45,15 @@ function App() {
                 <Bookings />
               </ProtectedRoute>
             } 
+          />
+
+          <Route
+            path="/chat/:bookingId"
+            element={
+              <ProtectedRoute>
+                <Chat />
+              </ProtectedRoute>
+            }
           />
 
           <Route

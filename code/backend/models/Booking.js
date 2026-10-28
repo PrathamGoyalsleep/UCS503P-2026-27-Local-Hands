@@ -11,6 +11,9 @@ const BookingSchema = new mongoose.Schema({
         ref: 'Worker',
         required: true
     },
+    service: {
+        type: String
+    },
     date: {
         type: String,
         required: true
@@ -18,6 +21,16 @@ const BookingSchema = new mongoose.Schema({
     time: {
         type: String,
         required: true
+    },
+    address: {
+        type: String
+    },
+    estimatedHours: {
+        type: Number,
+        default: 1
+    },
+    estimatedPrice: {
+        type: Number
     },
     status: {
         type: String,
@@ -30,4 +43,3 @@ const BookingSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model("Booking", BookingSchema);
-

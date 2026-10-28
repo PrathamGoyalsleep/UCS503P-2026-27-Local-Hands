@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export async function registerWorker(workerData, token) {
   const response = await fetch(`${API_URL}/api/workers`, {
@@ -29,6 +29,28 @@ export async function getWorkers(category = "", location = "") {
 
   if (!response.ok) {
     throw new Error(data.message || "Failed to fetch workers");
+  }
+
+  return data;
+}
+
+export async function getWorkerById(id) {
+  const response = await fetch(`${API_URL}/api/workers/${id}`);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch worker details");
+  }
+
+  return data;
+}
+
+export async function getServiceAreas() {
+  const response = await fetch(`${API_URL}/api/workers/service-areas`);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch service areas");
   }
 
   return data;

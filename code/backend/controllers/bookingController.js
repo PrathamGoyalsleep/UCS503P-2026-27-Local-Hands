@@ -4,10 +4,20 @@ const Worker = require('../models/Worker');
 // POST /api/bookings
 const createBooking = async (req, res) => {
     try {
-        const { workerId, date, time, notes } = req.body;
+        const { workerId, service, date, time, address, notes, estimatedPrice, estimatedHours } = req.body;
         const customerId = req.user.id; 
 
-        // Check for double booking
+        if (!workerId || !date || !time) {
+            return res.status(400).json({ message: "Worker, date, and time are required." });
+        }
+
+        // Recheck: Prevent booking past dates
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (date < todayStr) {
+            return res.status(400).json({ message: "Cannot book an appointment for a past date." });
+        }
+
+        // Check for double booking collision
         const existingBooking = await Booking.findOne({
             workerId,
             date,
@@ -16,15 +26,19 @@ const createBooking = async (req, res) => {
         });
 
         if (existingBooking) {
-            return res.status(400).json({ message: "Worker is already booked for this time slot." });
+            return res.status(400).json({ message: "This professional is already booked for this date and time slot. Please choose another time." });
         }
 
         const newBooking = new Booking({
             customerId,
             workerId,
+            service: service || "General Service",
             date,
             time,
-            notes
+            address: address || "",
+            estimatedHours: estimatedHours || 1,
+            estimatedPrice: estimatedPrice || 0,
+            notes: notes || ""
         });
 
         await newBooking.save();
@@ -85,4 +99,3 @@ const updateBookingStatus = async (req, res) => {
 };
 
 module.exports = { createBooking, getMyBookings, updateBookingStatus };
-

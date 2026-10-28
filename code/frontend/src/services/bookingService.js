@@ -1,5 +1,7 @@
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export const getMyBookings = async (token) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/my-bookings`, {
+    const response = await fetch(`${API_URL}/api/bookings/my-bookings`, {
         headers: { Authorization: `Bearer ${token}` }
     });
     if (!response.ok) throw new Error("Failed to load bookings");
@@ -7,7 +9,7 @@ export const getMyBookings = async (token) => {
 };
 
 export const createBooking = async (token, bookingData) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
+    const response = await fetch(`${API_URL}/api/bookings`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -21,7 +23,7 @@ export const createBooking = async (token, bookingData) => {
 };
 
 export const updateBookingStatus = async (token, id, status) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/${id}/status`, {
+    const response = await fetch(`${API_URL}/api/bookings/${id}/status`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -33,4 +35,3 @@ export const updateBookingStatus = async (token, id, status) => {
     if (!response.ok) throw new Error(data.message || "Failed to update booking");
     return data;
 };
-
