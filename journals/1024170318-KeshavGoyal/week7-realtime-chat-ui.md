@@ -53,3 +53,4 @@ Following the Week 6 booking scheduling engine, users needed a dedicated communi
 - **Parameter Normalization:** Resolved an issue where message loading inverted parameters, replacing it with dual loading: direct conversation bundle with fallback to `getMyBookings`.
 - **Keyboard Usability:** Implemented standard desktop chat keyboard ergonomics: `Enter` sends the message immediately, while `Shift + Enter` allows multi-line input.
 - **Mobile Responsive Layout:** Designed sticky input controls and dynamic height constraints (`calc(100vh - 100px)`) ensuring seamless operation on mobile screens and tablets without viewport clipping.
+

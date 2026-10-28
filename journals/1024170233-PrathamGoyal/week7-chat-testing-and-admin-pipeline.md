@@ -48,3 +48,4 @@ Building on the Week 6 booking workflow, this week’s primary focus was:
 ## 4. Next Steps
 - Implement online payment gateway integration (Razorpay / Stripe) for completed service bookings.
 - Add technician GPS live status tracking on customer booking cards.
+
