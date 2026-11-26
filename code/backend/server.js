@@ -25,10 +25,15 @@ const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
 const corsOrigin = (origin, callback) => {
     if (!origin) return callback(null, true);
     const normalized = origin.replace(/\/+$/, "");
-    if (allowedOrigins.includes(normalized) || allowedOrigins.includes("*")) {
+    if (
+        allowedOrigins.includes(normalized) ||
+        allowedOrigins.includes("*") ||
+        normalized === "https://serveconnect-frontend.onrender.com" ||
+        /^https:\/\/serveconnect-frontend-[a-z0-9-]+\.onrender\.com$/i.test(normalized)
+    ) {
         return callback(null, true);
     }
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+    return callback(null, false);
 };
 
 const io = new Server(server, {
