@@ -2,6 +2,7 @@ services:
   - type: web
     name: serveconnect-backend
     runtime: node
+    plan: free
     rootDir: code/backend
     buildCommand: npm install
     startCommand: npm start
