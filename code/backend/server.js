@@ -179,10 +179,16 @@ io.on("connection", (socket) => {
 // --------------------------------------------------
 // REST API
 // --------------------------------------------------
-connectDB();
+if (process.env.NODE_ENV !== "test") {
+    connectDB();
+}
 
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
-app.use(express.json());
+app.use(express.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf;
+    }
+}));
 
 app.get("/", (req, res) => res.send("ServeConnect Backend is running"));
 
@@ -191,6 +197,12 @@ app.use("/api/workers",  require("./routes/workerRoutes"));
 app.use("/api/admin",    require("./routes/adminRoutes"));
 app.use("/api/bookings", require("./routes/bookingRoutes"));
 app.use("/api/chat",     require("./routes/chatRoutes"));
+app.use("/api/payments", require("./routes/paymentRoutes"));
+app.use("/api/reviews",  require("./routes/reviewRoutes"));
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (process.env.NODE_ENV !== "test") {
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = app;

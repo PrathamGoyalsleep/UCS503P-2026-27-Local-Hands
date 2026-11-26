@@ -18,8 +18,15 @@ const UserSchema = new mongoose.Schema({
         type: String,
         enum: ['customer', 'worker', 'admin'],
         default: 'customer'
+    },
+    profileImage: {
+        type: String,
+        default: ""
+    },
+    profileImagePublicId: {
+        type: String,
+        default: ""
     }
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", UserSchema);
-

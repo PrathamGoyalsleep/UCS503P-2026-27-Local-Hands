@@ -1,6 +1,7 @@
 const Worker = require("../models/Worker");
 const User = require("../models/User");
 const Review = require("../models/Review");
+const { uploadBufferToCloudinary } = require("../config/cloudinary");
 
 // Official supported service areas (Backend single source of truth)
 const SUPPORTED_CITIES = [
@@ -462,9 +463,88 @@ const searchWorkers = async (req, res) => {
     }
 };
 
+const uploadWorkerProfileImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No image file provided." });
+        }
+
+        if (req.file.mimetype && !req.file.mimetype.startsWith("image/")) {
+            return res.status(400).json({ message: "Invalid file type. Only image files (JPEG, PNG, WEBP) are allowed for profile pictures." });
+        }
+
+        const worker = await Worker.findOne({ userId: req.user._id });
+        if (!worker) {
+            return res.status(404).json({ message: "Worker profile not found." });
+        }
+
+        const result = await uploadBufferToCloudinary(req.file.buffer, {
+            folder: "ServeConnect/workers/profile-images",
+            public_id: `worker_profile_${worker._id}`
+        });
+
+        worker.photo = result.secure_url;
+        worker.profileImage = result.secure_url;
+        worker.profileImagePublicId = result.public_id;
+        await worker.save();
+
+        res.json({
+            message: "Profile image uploaded successfully",
+            profileImage: result.secure_url,
+            worker
+        });
+    } catch (error) {
+        console.error("[Worker] uploadProfileImage error:", error);
+        res.status(500).json({ message: error.message || "Failed to upload profile picture." });
+    }
+};
+
+const uploadWorkerDocument = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No document file provided." });
+        }
+
+        const { title, docType } = req.body;
+        const worker = await Worker.findOne({ userId: req.user._id });
+        if (!worker) {
+            return res.status(404).json({ message: "Worker profile not found." });
+        }
+
+        const result = await uploadBufferToCloudinary(req.file.buffer, {
+            folder: "ServeConnect/workers/certificates",
+            public_id: `worker_doc_${worker._id}_${Date.now()}`
+        });
+
+        const newDoc = {
+            title: title?.trim() || req.file.originalname || "Verification Document",
+            docType: docType?.trim() || "Trade Certificate",
+            url: result.secure_url,
+            publicId: result.public_id,
+            verified: false,
+            uploadedAt: new Date()
+        };
+
+        worker.documents.push(newDoc);
+        worker.certificates.push(newDoc);
+        await worker.save();
+
+        res.json({
+            message: "Document uploaded successfully",
+            document: newDoc,
+            worker
+        });
+    } catch (error) {
+        console.error("[Worker] uploadDocument error:", error);
+        res.status(500).json({ message: error.message || "Failed to upload document." });
+    }
+};
+
 module.exports = {
     registerWorkerProfile,
     getWorkerById,
     searchWorkers,
-    getServiceAreas
+    getServiceAreas,
+    uploadWorkerProfileImage,
+    uploadWorkerDocument
 };

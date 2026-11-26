@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { createBooking } from "../services/bookingService";
 import { getWorkerById } from "../services/workerService";
+import { getWorkerReviews } from "../services/reviewService";
+import { calculatePricing } from "../utils/pricingCalculator";
 import {
   BadgeCheck,
   ShieldCheck,
@@ -32,7 +35,7 @@ import {
 
 const categoryTheme = {
   Electrician: { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", label: "Electrician", Icon: Zap },
-  Plumber:     { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", label: "Plumber", Icon: Wrench },
+  Plumber:     { color: "#1E4E8C", bg: "#EEF4FB", border: "#CBDDF2", label: "Plumber", Icon: Wrench },
   Carpenter:   { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE", label: "Carpenter", Icon: Hammer },
   Painter:     { color: "#DB2777", bg: "#FDF2F8", border: "#FBCFE8", label: "Painter", Icon: Paintbrush },
   Cleaning:    { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", label: "Cleaning", Icon: Sparkles },
@@ -46,6 +49,97 @@ const timeSlots = [
   "04:30 PM - 06:30 PM",
   "07:00 PM - 09:00 PM"
 ];
+
+// Helpers for Asia/Kolkata date and slot expiration
+function getKolkataDateString(d = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  const parts = formatter.formatToParts(d);
+  const p = {};
+  for (const part of parts) p[part.type] = part.value;
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+function getKolkataTomorrowString() {
+  const now = new Date();
+  now.setDate(now.getDate() + 1);
+  return getKolkataDateString(now);
+}
+
+function parseSlotStartMinutes(slotStr) {
+  if (!slotStr || typeof slotStr !== "string") return null;
+  const parts = slotStr.split(/[-–]/);
+  const target = parts[0].trim();
+  const match = target.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return null;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const modifier = match[3] ? match[3].toUpperCase() : null;
+
+  if (modifier === "PM" && hours < 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+}
+
+function parseSlotEndMinutes(slotStr) {
+  if (!slotStr || typeof slotStr !== "string") return null;
+  const parts = slotStr.split(/[-–]/);
+  const target = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+  const match = target.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return null;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const modifier = match[3] ? match[3].toUpperCase() : null;
+
+  if (modifier === "PM" && hours < 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+}
+
+function parseSlotDurationHours(slotStr) {
+  if (!slotStr || typeof slotStr !== "string") return 2;
+  const start = parseSlotStartMinutes(slotStr);
+  const end = parseSlotEndMinutes(slotStr);
+  if (start !== null && end !== null && end > start) {
+    return Math.round(((end - start) / 60) * 10) / 10;
+  }
+  return 2;
+}
+
+function getKolkataCurrentMinutes() {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+  const parts = formatter.formatToParts(new Date());
+  const p = {};
+  for (const part of parts) p[part.type] = part.value;
+  return parseInt(p.hour, 10) * 60 + parseInt(p.minute, 10);
+}
+
+function isSlotExpired(slotStr, selectedDate) {
+  if (!selectedDate) return false;
+  const todayStr = getKolkataDateString();
+  if (selectedDate < todayStr) return true; // Past dates are always expired
+  if (selectedDate > todayStr) return false; // Future date: all valid slots allowed
+
+  // For today: If the slot's starting time has already passed or is currently elapsed, mark it unavailable.
+  // Do not allow booking a partially elapsed slot!
+  const slotStart = parseSlotStartMinutes(slotStr);
+  if (slotStart === null) return false;
+  const currentMinutes = getKolkataCurrentMinutes();
+  return slotStart <= currentMinutes;
+}
 
 export default function WorkerProfileModal({ workerId, initialWorker, onClose, onBookingSuccess }) {
   const { token, isAuthenticated } = useAuth();
@@ -63,15 +157,44 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
   const [activeTab, setActiveTab] = useState("overview"); // overview, portfolio, reviews, booking
 
   // Booking form state
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getKolkataDateString();
+  const tomorrowStr = getKolkataTomorrowString();
   const [selectedService, setSelectedService] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [selectedDuration, setSelectedDuration] = useState(2);
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [bookingDone, setBookingDone] = useState(false);
   const [bookingError, setBookingError] = useState("");
+  const [nowTick, setNowTick] = useState(Date.now());
+
+  // Real-time slot availability recalculation timer
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowTick(Date.now());
+    }, 15000); // 15s refresh
+    return () => clearInterval(timer);
+  }, []);
+
+  // Automatically clear selected slot if it becomes expired
+  useEffect(() => {
+    if (selectedDate && selectedTime) {
+      if (isSlotExpired(selectedTime, selectedDate)) {
+        setSelectedTime("");
+        setBookingError("Your selected time slot has already passed. Please choose another available slot.");
+      }
+    }
+  }, [selectedDate, selectedTime, nowTick]);
 
   // Fetch full worker details (reviews, portfolio, etc.)
   useEffect(() => {
@@ -81,6 +204,25 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
         const id = workerId || initialWorker?._id;
         if (!id) return;
         const fullData = await getWorkerById(id);
+        
+        try {
+          const revData = await getWorkerReviews(id);
+          if (revData && revData.reviews && revData.reviews.length > 0) {
+            const formatted = revData.reviews.map(r => ({
+              name: r.customer?.name || "Verified Customer",
+              rating: r.rating,
+              comment: r.comment,
+              date: new Date(r.createdAt).toLocaleDateString(),
+              service: r.booking?.service || fullData.category
+            }));
+            fullData.reviews = formatted;
+            fullData.rating = revData.averageRating || fullData.rating;
+            fullData.totalReviews = revData.totalReviews || fullData.totalReviews;
+          }
+        } catch (rErr) {
+          // keep fallback reviews if fetch fails
+        }
+
         if (isMounted) {
           setWorker(fullData);
           if (fullData.servicesOffered && fullData.servicesOffered.length > 0) {
@@ -106,7 +248,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  // ── Unified, reliable scrolling for all 4 navigation tabs ──
+  // ─€─€ Unified, reliable scrolling for all 4 navigation tabs ─€─€
   const scrollToSection = useCallback((sectionId) => {
     setActiveTab(sectionId);
 
@@ -171,14 +313,38 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
   };
   const CategoryIcon = theme.Icon;
 
-  // Calculate dynamic estimated price
-  const baseRate = worker?.charges || 300;
-  let serviceMultiplier = 1.0;
-  if (worker?.servicesOffered && selectedService) {
-    const sObj = worker.servicesOffered.find(s => (s.name || s) === selectedService);
-    if (sObj && sObj.priceMultiplier) serviceMultiplier = sObj.priceMultiplier;
-  }
-  const estimatedTotal = Math.round(baseRate * serviceMultiplier);
+  // Calculate standardized transparent pricing (Single Source of Truth)
+  const hourlyRate = worker?.charges || 250;
+  const pricing = calculatePricing({
+    hourlyRate,
+    durationHours: selectedDuration || 2,
+    platformFee: 0,
+    taxes: 0,
+    additionalCharges: 0
+  });
+  const estimatedTotal = pricing.totalAmount;
+
+  const handleDateChange = (val) => {
+    setSelectedDate(val);
+    setBookingError("");
+    if (val && val < todayStr) {
+      setBookingError("Please select today or a future date.");
+      setSelectedTime("");
+      return;
+    }
+    if (selectedTime && isSlotExpired(selectedTime, val)) {
+      setSelectedTime("");
+    }
+  };
+
+  const handleSlotClick = (slot) => {
+    if (isSlotExpired(slot, selectedDate)) return;
+    setSelectedTime(slot);
+    setBookingError("");
+    // Sync duration with slot length
+    const slotHours = parseSlotDurationHours(slot);
+    if (slotHours) setSelectedDuration(slotHours);
+  };
 
   // Submit Booking
   const handleConfirmBooking = async (e) => {
@@ -195,11 +361,16 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
       return;
     }
     if (selectedDate < todayStr) {
-      setBookingError("Cannot schedule a booking in the past. Please select today or a future date.");
+      setBookingError("Please select today or a future date.");
       return;
     }
     if (!selectedTime) {
       setBookingError("Please select a convenient time slot.");
+      return;
+    }
+    if (isSlotExpired(selectedTime, selectedDate)) {
+      setSelectedTime("");
+      setBookingError("Your selected time slot has already passed. Please choose another available slot.");
       return;
     }
     if (!address.trim()) {
@@ -216,7 +387,9 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
         time: selectedTime,
         address: address.trim(),
         notes: notes.trim(),
-        estimatedPrice: estimatedTotal
+        estimatedHours: pricing.durationHours,
+        estimatedPrice: pricing.totalAmount,
+        priceBreakdown: pricing
       });
 
       setBookingDone(true);
@@ -229,13 +402,14 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
   };
 
   if (loading) {
-    return (
+    return createPortal(
       <div style={styles.modalOverlay}>
         <div style={{ ...styles.modalContainer, maxWidth: "600px", padding: "4rem 2rem", textAlign: "center" }}>
           <div style={styles.spinner} />
           <p style={{ marginTop: "1.25rem", color: "#6B7280", fontWeight: 600 }}>Loading verified professional profile...</p>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -248,7 +422,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
     { id: "booking", label: "Book Appointment", icon: CalendarDays },
   ];
 
-  return (
+  return createPortal(
     <div style={styles.modalOverlay} onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-worker-name">
       <div style={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         
@@ -262,15 +436,15 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
           <X size={20} color="#374151" />
         </button>
 
-        {/* ── 1. Hero Header Banner ── */}
+        {/* ─€─€ 1. Hero Header Banner ─€─€ */}
         <div style={styles.heroBanner}>
           <div style={styles.heroContent}>
             
             {/* Avatar / Photo with verified ring */}
             <div style={styles.avatarWrapper}>
-              {worker.photo ? (
+              {(worker.profileImage || worker.photo) ? (
                 <img
-                  src={worker.photo}
+                  src={worker.profileImage || worker.photo}
                   alt={worker.userId?.name || "Professional"}
                   style={styles.avatarImg}
                   onError={(e) => {
@@ -283,7 +457,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                 style={{
                   ...styles.avatarFallback,
                   background: `linear-gradient(135deg, ${theme.color}, #1E40AF)`,
-                  display: worker.photo ? "none" : "flex",
+                  display: (worker.profileImage || worker.photo) ? "none" : "flex",
                 }}
               >
                 {worker.userId?.name?.charAt(0) || "P"}
@@ -370,7 +544,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
           </div>
         </div>
 
-        {/* ── Navigation Tabs ── */}
+        {/* ─€─€ Navigation Tabs ─€─€ */}
         <div style={styles.tabsBar}>
           {navigationTabs.map((tab) => {
             const TabIcon = tab.icon;
@@ -382,27 +556,27 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                 onClick={() => scrollToSection(tab.id)}
                 style={{
                   ...styles.tabBtn,
-                  color: isCurrent ? "var(--primary)" : "#6B7280",
-                  borderColor: isCurrent ? "var(--primary)" : "transparent",
+                  color: isCurrent ? "#2563EB" : "#6B7280",
+                  borderColor: isCurrent ? "#2563EB" : "transparent",
                   fontWeight: isCurrent ? 700 : 500,
                   background: isCurrent ? "#EFF6FF" : "transparent"
                 }}
               >
-                <TabIcon size={16} color={isCurrent ? "var(--primary)" : "#6B7280"} />
+                <TabIcon size={16} color={isCurrent ? "#2563EB" : "#6B7280"} />
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* ── Scrollable Body ── */}
+        {/* ─€─€ Scrollable Body ─€─€ */}
         <div
           ref={modalBodyRef}
           onScroll={handleScroll}
           style={styles.modalBody}
         >
 
-          {/* ── 2. Overview, Bio, Services & Working Hours ── */}
+          {/* ─€─€ 2. Overview, Bio, Services & Working Hours ─€─€ */}
           <section
             ref={overviewRef}
             id="overview-section"
@@ -460,7 +634,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
             </div>
           </section>
 
-          {/* ── 3. Recent Work & Portfolio Gallery ── */}
+          {/* ─€─€ 3. Recent Work & Portfolio Gallery ─€─€ */}
           <section
             ref={portfolioRef}
             id="portfolio-section"
@@ -472,7 +646,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                 <p style={styles.sectionSubtitle}>Authentic photography from verified customer home visits</p>
               </div>
               <span style={styles.workCountBadge}>
-                <Images size={14} color="var(--primary)" style={{ marginRight: "0.35rem" }} />
+                <Images size={14} color="#2563EB" style={{ marginRight: "0.35rem" }} />
                 {worker.portfolio?.length || 3} Showcase Projects
               </span>
             </div>
@@ -504,7 +678,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
             </div>
           </section>
 
-          {/* ── 4. Customer Reviews Section ── */}
+          {/* ─€─€ 4. Customer Reviews Section ─€─€ */}
           <section
             ref={reviewsRef}
             id="reviews-section"
@@ -553,7 +727,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
             </div>
           </section>
 
-          {/* ── 5. Premium Step-by-Step Booking Experience (At Bottom) ── */}
+          {/* ─€─€ 5. Premium Step-by-Step Booking Experience (At Bottom) ─€─€ */}
           <section
             ref={bookingRef}
             id="booking-section"
@@ -561,7 +735,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
           >
             <div style={styles.bookingHeader}>
               <div style={styles.bookingHeaderIcon}>
-                <CalendarCheck size={26} color="var(--primary)" />
+                <CalendarCheck size={26} color="#2563EB" />
               </div>
               <div>
                 <h2 style={{ fontSize: "1.45rem", fontWeight: 800, color: "#111827", marginBottom: "0.2rem" }}>
@@ -619,14 +793,14 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                           onClick={() => setSelectedService(name)}
                           style={{
                             ...styles.serviceChoicePill,
-                            borderColor: isSelected ? "var(--primary)" : "#E5E7EB",
+                            borderColor: isSelected ? "#2563EB" : "#E5E7EB",
                             background: isSelected ? "#EFF6FF" : "white",
-                            color: isSelected ? "var(--primary)" : "#374151",
+                            color: isSelected ? "#2563EB" : "#374151",
                             fontWeight: isSelected ? 700 : 500,
                           }}
                         >
                           <span>{name}</span>
-                          {isSelected && <Check size={14} color="var(--primary)" />}
+                          {isSelected && <Check size={14} color="#2563EB" />}
                         </button>
                       );
                     })}
@@ -645,26 +819,34 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                       type="date"
                       min={todayStr}
                       value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
+                      onChange={(e) => handleDateChange(e.target.value)}
                       required
                       style={styles.dateInput}
                     />
                     <div style={styles.dateShortcuts}>
                       <button
                         type="button"
-                        onClick={() => setSelectedDate(todayStr)}
-                        style={styles.shortcutDateBtn}
+                        onClick={() => handleDateChange(todayStr)}
+                        style={{
+                          ...styles.shortcutDateBtn,
+                          background: selectedDate === todayStr ? "#EFF6FF" : "white",
+                          borderColor: selectedDate === todayStr ? "#2563EB" : "#CBD5E1",
+                          color: selectedDate === todayStr ? "#2563EB" : "#475569",
+                          fontWeight: selectedDate === todayStr ? 700 : 500
+                        }}
                       >
                         Today
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          const tom = new Date();
-                          tom.setDate(tom.getDate() + 1);
-                          setSelectedDate(tom.toISOString().split("T")[0]);
+                        onClick={() => handleDateChange(tomorrowStr)}
+                        style={{
+                          ...styles.shortcutDateBtn,
+                          background: selectedDate === tomorrowStr ? "#EFF6FF" : "white",
+                          borderColor: selectedDate === tomorrowStr ? "#2563EB" : "#CBD5E1",
+                          color: selectedDate === tomorrowStr ? "#2563EB" : "#475569",
+                          fontWeight: selectedDate === tomorrowStr ? 700 : 500
                         }}
-                        style={styles.shortcutDateBtn}
                       >
                         Tomorrow
                       </button>
@@ -679,21 +861,103 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                     <div style={styles.timeSlotGrid}>
                       {timeSlots.map((slot, idx) => {
                         const isSelected = selectedTime === slot;
+                        const isExpired = isSlotExpired(slot, selectedDate);
+
                         return (
                           <button
                             type="button"
                             key={idx}
-                            onClick={() => setSelectedTime(slot)}
+                            disabled={isExpired}
+                            onClick={() => handleSlotClick(slot)}
                             style={{
                               ...styles.timeSlotBtn,
-                              borderColor: isSelected ? "var(--primary)" : "#E5E7EB",
-                              background: isSelected ? "var(--primary)" : "white",
-                              color: isSelected ? "white" : "#374151",
-                              fontWeight: isSelected ? 700 : 500
+                              borderColor: isExpired
+                                ? "#E2E8F0"
+                                : isSelected
+                                ? "#2563EB"
+                                : "#E5E7EB",
+                              background: isExpired
+                                ? "#F1F5F9"
+                                : isSelected
+                                ? "#2563EB"
+                                : "white",
+                              color: isExpired
+                                ? "#94A3B8"
+                                : isSelected
+                                ? "white"
+                                : "#374151",
+                              fontWeight: isSelected ? 700 : 500,
+                              cursor: isExpired ? "not-allowed" : "pointer",
+                              opacity: isExpired ? 0.75 : 1,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "0.4rem",
+                              padding: "0.65rem 0.85rem"
+                            }}
+                            title={isExpired ? "This time slot has already passed for today." : `Select ${slot}`}
+                          >
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                              <Clock3 size={13} color={isExpired ? "#94A3B8" : (isSelected ? "white" : "#64748B")} />
+                              <span>{slot}</span>
+                            </span>
+                            {isExpired && (
+                              <span style={{
+                                fontSize: "0.68rem",
+                                fontWeight: 700,
+                                background: "#E2E8F0",
+                                color: "#64748B",
+                                padding: "0.15rem 0.45rem",
+                                borderRadius: "4px",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px"
+                              }}>
+                                Unavailable
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize: "0.78rem", color: "#64748B", marginTop: "0.5rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                      <Clock3 size={13} color="#94A3B8" />
+                      <span>Past or currently elapsed time slots are marked unavailable.</span>
+                    </div>
+                  </div>
+
+                  {/* Step 4: Booking Duration */}
+                  <div style={styles.formSection}>
+                    <label style={styles.formStepLabel}>
+                      <span style={styles.stepNumber}>4</span> Service Duration
+                    </label>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 110px), 1fr))", gap: "0.6rem" }}>
+                      {[
+                        { hours: 1, label: "1 Hour", sub: "Quick Fix" },
+                        { hours: 2, label: "2 Hours", sub: "Standard" },
+                        { hours: 3, label: "3 Hours", sub: "Extended" },
+                        { hours: 4, label: "4 Hours", sub: "Deep Job" },
+                      ].map((opt) => {
+                        const isDurSelected = Number(selectedDuration) === opt.hours;
+                        return (
+                          <button
+                            type="button"
+                            key={opt.hours}
+                            onClick={() => setSelectedDuration(opt.hours)}
+                            style={{
+                              padding: "0.65rem 0.5rem",
+                              borderRadius: "10px",
+                              border: isDurSelected ? "2px solid #2563EB" : "1px solid #CBD5E1",
+                              background: isDurSelected ? "#EFF6FF" : "#FFFFFF",
+                              color: isDurSelected ? "#1D4ED8" : "#334155",
+                              cursor: "pointer",
+                              textAlign: "center",
+                              transition: "all 0.15s ease"
                             }}
                           >
-                            <Clock3 size={13} style={{ marginRight: "0.3rem" }} />
-                            <span>{slot}</span>
+                            <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>{opt.label}</div>
+                            <div style={{ fontSize: "0.7rem", color: isDurSelected ? "#2563EB" : "#64748B", marginTop: "0.1rem" }}>
+                              {opt.sub}
+                            </div>
                           </button>
                         );
                       })}
@@ -702,10 +966,10 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
 
                 </div>
 
-                {/* Step 4: Service Address */}
+                {/* Step 5: Service Address */}
                 <div style={styles.formSection}>
                   <label style={styles.formStepLabel}>
-                    <span style={styles.stepNumber}>4</span> Service Address & Landmark
+                    <span style={styles.stepNumber}>5</span> Service Address & Landmark
                   </label>
                   <input
                     type="text"
@@ -717,10 +981,10 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                   />
                 </div>
 
-                {/* Step 5: Optional Notes */}
+                {/* Step 6: Optional Notes */}
                 <div style={styles.formSection}>
                   <label style={styles.formStepLabel}>
-                    <span style={styles.stepNumber}>5</span> Specific Issue or Notes (Optional)
+                    <span style={styles.stepNumber}>6</span> Specific Issue or Notes (Optional)
                   </label>
                   <textarea
                     rows={2}
@@ -731,27 +995,27 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                   />
                 </div>
 
-                {/* Step 6 & 7: Price Breakdown & Booking Summary Card */}
+                {/* Step 7: Transparent Payment Summary & Breakdown */}
                 <div style={styles.summaryCard}>
                   <div style={styles.summaryHeader}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontWeight: 700, color: "#111827", fontSize: "1.05rem" }}>
-                      <FileText size={18} color="var(--primary)" />
-                      <span>Booking Price & Summary</span>
+                      <FileText size={18} color="#2563EB" />
+                      <span>Payment Summary & Price Breakdown</span>
                     </div>
                     <span style={styles.guaranteeTag}>
                       <ShieldCheck size={14} color="#059669" style={{ marginRight: "0.25rem" }} />
-                      100% Satisfaction Guarantee
+                      100% Transparent
                     </span>
                   </div>
 
                   <div style={styles.summaryDetails}>
                     <div style={styles.summaryRow}>
                       <span style={{ color: "#6B7280" }}>Professional</span>
-                      <strong style={{ color: "#111827" }}>{worker.userId?.name} ({worker.category})</strong>
+                      <strong style={{ color: "#111827" }}>{worker.userId?.name || "Professional"} ({worker.category})</strong>
                     </div>
                     <div style={styles.summaryRow}>
                       <span style={{ color: "#6B7280" }}>Selected Service</span>
-                      <strong style={{ color: "#111827" }}>{selectedService || "Standard Diagnostic & Repair"}</strong>
+                      <strong style={{ color: "#111827" }}>{selectedService || `${worker.category} Standard Service`}</strong>
                     </div>
                     <div style={styles.summaryRow}>
                       <span style={{ color: "#6B7280" }}>Appointment Schedule</span>
@@ -759,19 +1023,47 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                         {selectedDate && selectedTime ? `${selectedDate} at ${selectedTime}` : "Please select date & time slot"}
                       </strong>
                     </div>
-                    <div style={styles.summaryRow}>
-                      <span style={{ color: "#6B7280" }}>Base Hourly Rate</span>
-                      <span>₹{worker.charges || 300}/hr</span>
+
+                    {/* Itemized Payment Table */}
+                    <div style={{ marginTop: "0.85rem", borderTop: "1px solid #E2E8F0", paddingTop: "0.75rem" }}>
+                      <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.5rem" }}>
+                        Payment Breakdown
+                      </div>
+                      <div style={styles.summaryRow}>
+                        <span style={{ color: "#64748B" }}>Professional hourly rate</span>
+                        <span style={{ fontWeight: 600, color: "#0F172A" }}>₹{pricing.hourlyRate}/hr</span>
+                      </div>
+                      <div style={styles.summaryRow}>
+                        <span style={{ color: "#64748B" }}>Booking duration</span>
+                        <span style={{ fontWeight: 600, color: "#0F172A" }}>{pricing.durationHours} {pricing.durationHours === 1 ? "hour" : "hours"}</span>
+                      </div>
+                      <div style={{ ...styles.summaryRow, background: "#F8FAFC", padding: "0.45rem 0.65rem", borderRadius: "8px", margin: "0.3rem 0" }}>
+                        <span style={{ fontWeight: 600, color: "#1E293B" }}>Service cost (₹{pricing.hourlyRate} &times; {pricing.durationHours} hrs)</span>
+                        <strong style={{ color: "#0F172A", fontSize: "1rem" }}>₹{pricing.serviceCost}</strong>
+                      </div>
+                      <div style={styles.summaryRow}>
+                        <span style={{ color: "#64748B" }}>Platform fee</span>
+                        <span style={{ color: "#059669", fontWeight: 600 }}>{pricing.platformFee === 0 ? "₹0 (Platform Promo)" : `₹${pricing.platformFee}`}</span>
+                      </div>
+                      <div style={styles.summaryRow}>
+                        <span style={{ color: "#64748B" }}>GST / Applicable taxes</span>
+                        <span style={{ color: "#64748B", fontWeight: 600 }}>{pricing.taxes === 0 ? "₹0 (Exempt/Included)" : `₹${pricing.taxes}`}</span>
+                      </div>
+                      <div style={styles.summaryRow}>
+                        <span style={{ color: "#64748B" }}>Additional charges</span>
+                        <span style={{ color: "#64748B", fontWeight: 600 }}>₹{pricing.additionalCharges}</span>
+                      </div>
                     </div>
-                    <div style={styles.summaryRow}>
-                      <span style={{ color: "#6B7280" }}>Safety & Trust Fee</span>
-                      <span style={{ color: "#059669", fontWeight: 600 }}>FREE (Platform Promo)</span>
-                    </div>
-                    <div style={{ ...styles.summaryRow, borderTop: "1.5px dashed #E5E7EB", paddingTop: "0.85rem", marginTop: "0.4rem" }}>
-                      <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#111827" }}>Estimated Total Price</span>
+
+                    {/* Total Row */}
+                    <div style={{ ...styles.summaryRow, borderTop: "1.5px dashed #CBD5E1", paddingTop: "0.85rem", marginTop: "0.5rem" }}>
+                      <div>
+                        <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#111827", display: "block" }}>Total Payable</span>
+                        <span style={{ fontSize: "0.74rem", color: "#059669", fontWeight: 600 }}>₹0 advance &bull; Pay after job completion</span>
+                      </div>
                       <div style={{ textAlign: "right" }}>
-                        <span style={{ fontWeight: 800, fontSize: "1.35rem", color: "#2563EB" }}>₹{estimatedTotal}</span>
-                        <div style={{ fontSize: "0.75rem", color: "#6B7280" }}>Pay after job completion</div>
+                        <span style={{ fontWeight: 800, fontSize: "1.45rem", color: "#2563EB" }}>₹{pricing.totalAmount}</span>
+                        <div style={{ fontSize: "0.72rem", color: "#64748B" }}>Via Razorpay / Cards</div>
                       </div>
                     </div>
                   </div>
@@ -802,7 +1094,7 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
                     ) : (
                       <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <CheckCircle2 size={18} color="white" />
-                        <span>Confirm Booking &bull; ₹{estimatedTotal}</span>
+                        <span>Confirm Booking &bull; ₹{pricing.totalAmount}</span>
                       </span>
                     )}
                   </button>
@@ -816,11 +1108,12 @@ export default function WorkerProfileModal({ workerId, initialWorker, onClose, o
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
-// ─── Inline CSS Styles for Modern Urban Company Look ───
+// ─€─€─€ Inline CSS Styles for Modern Urban Company Look ─€─€─€
 const styles = {
   modalOverlay: {
     position: "fixed",
@@ -871,13 +1164,13 @@ const styles = {
   heroBanner: {
     background: "white",
     borderBottom: "1px solid #E5E7EB",
-    padding: "2rem 2rem 1.5rem",
+    padding: "clamp(1.25rem, 3vw, 2rem) clamp(1rem, 3vw, 2rem) 1.25rem",
     position: "relative",
   },
   heroContent: {
     display: "flex",
     alignItems: "flex-start",
-    gap: "1.5rem",
+    gap: "1.25rem",
     flexWrap: "wrap",
   },
   avatarWrapper: {
@@ -976,12 +1269,15 @@ const styles = {
   statsStrip: {
     display: "flex",
     alignItems: "center",
-    gap: "1.25rem",
+    gap: "clamp(0.75rem, 2vw, 1.25rem)",
     background: "#F8FAFC",
-    padding: "0.6rem 1rem",
+    padding: "0.6rem 0.85rem",
     borderRadius: "14px",
     border: "1px solid #E2E8F0",
     width: "fit-content",
+    maxWidth: "100%",
+    flexWrap: "wrap",
+    boxSizing: "border-box",
   },
   statItem: {
     display: "flex",
@@ -1006,7 +1302,7 @@ const styles = {
     paddingTop: "0.25rem",
   },
   bookShortcutBtn: {
-    background: "var(--primary, #2563EB)",
+    background: "linear-gradient(135deg, #1E4E8C 0%, #2A64AC 100%)",
     color: "white",
     border: "none",
     borderRadius: "14px",
@@ -1017,8 +1313,9 @@ const styles = {
     alignItems: "center",
     gap: "0.5rem",
     cursor: "pointer",
-    boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
+    boxShadow: "0 4px 14px rgba(30, 78, 140, 0.25)",
     transition: "all 0.2s ease",
+    fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif",
   },
   tabsBar: {
     display: "flex",
@@ -1042,11 +1339,12 @@ const styles = {
     transition: "all 0.15s ease",
   },
   modalBody: {
-    padding: "1.75rem 2rem",
+    padding: "clamp(1rem, 2.5vw, 1.75rem) clamp(0.85rem, 2.5vw, 2rem)",
     overflowY: "auto",
     display: "flex",
     flexDirection: "column",
-    gap: "1.75rem",
+    gap: "1.5rem",
+    WebkitOverflowScrolling: "touch",
   },
   sectionCard: {
     background: "white",
@@ -1130,7 +1428,7 @@ const styles = {
   },
   workCountBadge: {
     background: "#EFF6FF",
-    color: "var(--primary)",
+    color: "#2563EB",
     padding: "0.25rem 0.75rem",
     borderRadius: "20px",
     fontSize: "0.8rem",
@@ -1276,7 +1574,7 @@ const styles = {
     height: "48px",
     borderRadius: "14px",
     background: "#EFF6FF",
-    color: "var(--primary)",
+    color: "#2563EB",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1461,22 +1759,23 @@ const styles = {
     cursor: "pointer",
   },
   submitBookingBtn: {
-    background: "var(--primary, #2563EB)",
+    background: "linear-gradient(135deg, #1E4E8C 0%, #2A64AC 100%)",
     color: "white",
     border: "none",
     borderRadius: "12px",
     padding: "0.85rem 2rem",
     fontWeight: 800,
     fontSize: "1rem",
-    boxShadow: "0 4px 16px rgba(37, 99, 235, 0.35)",
+    boxShadow: "0 4px 16px rgba(30, 78, 140, 0.28)",
     transition: "all 0.2s ease",
+    fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif",
   },
   spinner: {
     width: "44px",
     height: "44px",
     borderRadius: "50%",
     border: "4px solid #E5E7EB",
-    borderTopColor: "var(--primary, #2563EB)",
+    borderTopColor: "var(--color-primary, #1E4E8C)",
     animation: "spin 0.8s linear infinite",
     margin: "0 auto",
   },

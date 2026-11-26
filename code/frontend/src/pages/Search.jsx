@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { getWorkers } from "../services/workerService";
 import { useAuth } from "../context/AuthContext";
 import { useLocationState } from "../context/LocationContext";
@@ -23,42 +23,50 @@ import {
   BriefcaseBusiness,
 } from "lucide-react";
 
+const palette = {
+  bgPrimary: "#F4F7FC",
+  bgSecondary: "#EAF1FA",
+  bgSurface: "#FFFFFF",
+  bgDark: "#0C1B36",
+  textPrimary: "#0F1D38",
+  textSecondary: "#56677F",
+  textMuted: "#8E9DB2",
+  brandPrimary: "#1E4E8C",
+  brandSecondary: "#2E62A2",
+  brandSoft: "#EEF4FB",
+  accent: "#0D9488",
+  border: "#D5E1F0",
+  borderSubtle: "#E4ECF6",
+  success: "#059669",
+  warning: "#D97706",
+  error: "#DC2626",
+};
+
 const categoryColors = {
   Electrician: { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", Icon: Zap },
-  Plumber:     { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", Icon: Wrench },
+  Plumber:     { color: "#1E4E8C", bg: "#EEF4FB", border: "#CBDDF2", Icon: Wrench },
   Carpenter:   { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE", Icon: Hammer },
   Painter:     { color: "#DB2777", bg: "#FDF2F8", border: "#FBCFE8", Icon: Paintbrush },
   Cleaning:    { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", Icon: Sparkles },
   "AC Repair": { color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC", Icon: Snowflake },
 };
 
-function StarRating({ rating, count = 28 }) {
-  const r = parseFloat(rating) || 4.8;
+function SkeletonRow() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-      <span style={{ color: "#D97706", fontWeight: 800, fontSize: "0.92rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-        <Star size={14} fill="#D97706" color="#D97706" />
-        <span>{r.toFixed(1)}</span>
-      </span>
-      <span style={{ color: "#64748B", fontSize: "0.78rem", fontWeight: 500 }}>
-        ({count})
-      </span>
-    </div>
-  );
-}
-
-function CardSkeleton() {
-  return (
-    <div style={{ background: "white", borderRadius: "18px", border: "1.5px solid #E2E8F0", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-        <div style={{ width: "60px", height: "60px", borderRadius: "16px", background: "#E2E8F0", animation: "shimmer 1.5s infinite" }} />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <div style={{ height: "18px", width: "65%", background: "#E2E8F0", borderRadius: "4px" }} />
-          <div style={{ height: "14px", width: "40%", background: "#E2E8F0", borderRadius: "4px" }} />
+    <div className="sc-search-skeleton" style={{
+      minHeight: "218px", padding: "1.25rem", borderRadius: "18px",
+      background: "#FFFFFF", border: `1px solid ${palette.borderSubtle}`,
+      boxShadow: "0 8px 24px rgba(25, 55, 110, 0.05)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.2rem" }}>
+        <div style={{ width: 58, height: 58, borderRadius: 15, background: palette.bgSecondary }} />
+        <div style={{ flex: 1, display: "grid", gap: "0.55rem" }}>
+          <div style={{ height: 14, width: "58%", background: palette.bgSecondary, borderRadius: 6 }} />
+          <div style={{ height: 11, width: "38%", background: palette.borderSubtle, borderRadius: 6 }} />
         </div>
       </div>
-      <div style={{ height: "50px", background: "#F1F5F9", borderRadius: "10px" }} />
-      <div style={{ height: "42px", background: "#E2E8F0", borderRadius: "10px" }} />
+      <div style={{ height: 11, width: "90%", background: palette.borderSubtle, borderRadius: 6, marginBottom: 9 }} />
+      <div style={{ height: 11, width: "65%", background: palette.borderSubtle, borderRadius: 6 }} />
     </div>
   );
 }
@@ -73,8 +81,11 @@ export default function Search() {
   const [locationInput, setLocationInput] = useState("");
   const [isServiceAreaSupported, setIsServiceAreaSupported] = useState(true);
   const [supportedCitiesList, setSupportedCitiesList] = useState(["Patiala", "Delhi", "Chandigarh", "Ludhiana", "Mohali"]);
+  const [maxPrice, setMaxPrice] = useState("");
+  const [minRating, setMinRating] = useState(0);
+  const [sortBy, setSortBy] = useState("recommended");
   const [selectedWorker, setSelectedWorker] = useState(null);
-  const [hoveredCardId, setHoveredCardId] = useState(null);
+  const [hoveredRowId, setHoveredRowId] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
   const [notified, setNotified] = useState(false);
 
@@ -110,7 +121,6 @@ export default function Search() {
     fetchWorkers();
   }, [searchParams, location, category]);
 
-  // Handle location search bar submit
   const handleLocationSubmit = (e) => {
     e.preventDefault();
     if (locationInput.trim()) {
@@ -124,413 +134,695 @@ export default function Search() {
     setTimeout(() => setToastMessage(""), 6000);
   };
 
-  // Filter workers by search input keyword if typed
-  const displayedWorkers = searchInput.trim()
-    ? workers.filter(w =>
-        (w.userId?.name || "").toLowerCase().includes(searchInput.toLowerCase()) ||
-        (w.category || "").toLowerCase().includes(searchInput.toLowerCase()) ||
-        (w.bio || "").toLowerCase().includes(searchInput.toLowerCase()) ||
-        (w.skills || []).some(s => s.toLowerCase().includes(searchInput.toLowerCase()))
-      )
-    : workers;
+  const displayedWorkers = useMemo(() => {
+    const kw = searchInput.trim().toLowerCase();
+    const filtered = workers.filter((w) => {
+      if (kw) {
+        const matchesKeyword =
+          (w.userId?.name || "").toLowerCase().includes(kw) ||
+          (w.category || "").toLowerCase().includes(kw) ||
+          (w.bio || "").toLowerCase().includes(kw) ||
+          (w.skills || []).some((s) => s.toLowerCase().includes(kw));
+        if (!matchesKeyword) return false;
+      }
+      if (maxPrice && Number(w.charges) > Number(maxPrice)) {
+        return false;
+      }
+      if (minRating > 0 && (Number(w.rating) || 0) < minRating) {
+        return false;
+      }
+      return true;
+    });
+
+    if (sortBy === "rating_desc") {
+      return [...filtered].sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+    }
+    if (sortBy === "price_asc") {
+      return [...filtered].sort((a, b) => (Number(a.charges) || 0) - (Number(b.charges) || 0));
+    }
+    if (sortBy === "price_desc") {
+      return [...filtered].sort((a, b) => (Number(b.charges) || 0) - (Number(a.charges) || 0));
+    }
+    if (sortBy === "exp_desc") {
+      return [...filtered].sort((a, b) => (Number(b.experience) || 0) - (Number(a.experience) || 0));
+    }
+    return filtered;
+  }, [workers, searchInput, maxPrice, minRating, sortBy]);
+
+  const hasActiveFilters = Boolean(searchInput.trim() || maxPrice || minRating > 0 || sortBy !== "recommended" || category);
+
+  const selectStyle = {
+    padding: "0.55rem 0.9rem",
+    background: palette.bgSurface,
+    border: `1px solid ${palette.border}`,
+    borderRadius: "8px",
+    fontSize: "0.86rem",
+    color: palette.textPrimary,
+    fontWeight: 500,
+    cursor: "pointer",
+    outline: "none",
+    fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+  };
 
   return (
-    <div style={{ background: "#F8FAFC", minHeight: "100vh", paddingBottom: "5rem" }}>
-      
-      {/* ── Toast Notification Banner ── */}
+    <div
+      className="sc-search-page"
+      style={{
+        background: "transparent",
+        minHeight: "100vh",
+        paddingBottom: "5rem",
+      }}
+    >
+      <style>{`
+        .sc-search-page h1, .sc-search-page h2, .sc-search-page h3, .sc-search-action, .sc-pro-card-cta, .sc-search-filter {
+          font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif !important;
+        }
+        .sc-search-inner { width: min(100% - 48px, var(--container-max, 1680px)); margin: 0 auto; padding: 0 clamp(1rem, 2.4vw, 2.5rem); box-sizing: border-box; }
+        .sc-search-results { width: min(100% - 48px, var(--container-max, 1680px)); margin: 0 auto; padding: 2rem clamp(1rem, 2.4vw, 2.5rem) 0; box-sizing: border-box; }
+        .sc-search-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1rem, 1.35vw, 1.6rem); align-items: stretch; }
+        .sc-professional-card { isolation: isolate; overflow: hidden; background: #FFFFFF !important; border: 1px solid #DCE5F2 !important; box-shadow: 0 4px 18px rgba(14, 27, 51, 0.05), 0 1px 3px rgba(14, 27, 51, 0.02) !important; }
+        .sc-professional-card:hover { transform: translateY(-5px) !important; box-shadow: 0 18px 36px rgba(18, 42, 82, .11), 0 4px 12px rgba(18, 42, 82, .05) !important; border-color: #BACEE6 !important; }
+        .sc-professional-card:focus-visible { outline: 3px solid rgba(30, 78, 140, .35) !important; outline-offset: 3px; }
+        .sc-professional-card img { transition: transform 420ms cubic-bezier(.2,.7,.2,1); }
+        .sc-professional-card:hover img { transform: scale(1.075); }
+        .sc-pro-card-cover { transition: filter 220ms ease; }
+        .sc-professional-card:hover .sc-pro-card-cover { filter: saturate(1.05); }
+        .sc-pro-card-cta { transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+        .sc-pro-card-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(30, 78, 140, .26) !important; }
+        .sc-pro-card-cta:active { transform: translateY(0); }
+        .sc-search-control { transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+        .sc-search-control:focus-within { border-color: #1E4E8C !important; box-shadow: 0 0 0 3px rgba(30, 78, 140, .12) !important; }
+        .sc-search-action { transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+        .sc-search-action:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(30, 78, 140, .22); }
+        .sc-search-filter { transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease; }
+        .sc-search-filter:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(30, 78, 140, .12); }
+        @media (min-width: 1600px) { .sc-search-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        @media (max-width: 1100px) { .sc-search-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 680px) { .sc-search-grid { grid-template-columns: minmax(0, 1fr); gap: .9rem; } .sc-search-results { padding: 1.25rem 1rem 0; } }
+        @media (prefers-reduced-motion: reduce) { .sc-professional-card, .sc-professional-card img, .sc-search-control, .sc-search-action, .sc-search-filter { transition: none !important; } }
+      `}</style>
+      {/* Toast */}
       {toastMessage && (
-        <div style={styles.toastBanner} className="animate-slide-up">
+        <div
+          style={{
+            position: "fixed",
+            bottom: "2rem",
+            right: "2rem",
+            background: palette.success,
+            color: "white",
+            padding: "0.9rem 1.4rem",
+            borderRadius: "10px",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            fontSize: "0.92rem",
+            fontWeight: 600,
+            boxShadow: "0 8px 24px rgba(36,43,53,0.18)",
+          }}
+        >
           <CheckCircle2 size={18} color="white" />
           <span>{toastMessage}</span>
-          <button onClick={() => setToastMessage("")} style={styles.toastCloseBtn} aria-label="Close notification">
+          <button
+            onClick={() => setToastMessage("")}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: palette.textPrimary,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              padding: "0.2rem",
+            }}
+            aria-label="Close notification"
+          >
             <X size={16} />
           </button>
         </div>
       )}
 
-      {/* ── Search Header & Dual Search Bar ── */}
-      <div style={styles.searchHeaderWrapper}>
-        <div style={styles.searchHeaderInner}>
-          <div style={{ maxWidth: "680px" }}>
-            <div style={styles.badgeLabel}>
-              Verified Home Services Marketplace
-            </div>
-            <h1 style={styles.pageHeading}>
-              Find a Trusted Professional
-            </h1>
-            <p style={styles.pageSubheading}>
-              Browse certified local specialists in <strong>{location}</strong>. Inspect previous completed work, verified reviews, and fixed pricing before booking.
-            </p>
-          </div>
+      {/* Page Header */}
+      <div
+        style={{
+          background: "linear-gradient(118deg, #0C1A33 0%, #12284E 58%, #1A386D 100%)",
+          color: "#FFFFFF",
+          padding: "2.75rem 2rem 2.25rem",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        }}
+      >
+        <div className="sc-search-inner">
+          <h1
+            style={{
+              fontSize: "2.1rem",
+              fontWeight: 800,
+              color: "#FFFFFF",
+              letterSpacing: "-0.03em",
+              margin: "0 0 0.4rem",
+              fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif",
+            }}
+          >
+            Find Professionals
+          </h1>
+          <p
+            style={{
+              color: "#C5D5EB",
+              fontSize: "0.95rem",
+              margin: "0 0 1.75rem",
+            }}
+          >
+            Browse certified local specialists in <strong style={{ color: "#E0ECFB" }}>{location}</strong>. Inspect reviews and fixed pricing before booking.
+          </p>
 
-          {/* Dual Search Input Bar: Service Keyword + City Area */}
-          <div style={styles.searchInputsContainer}>
-            
-            {/* Service / Skill Search */}
-            <div style={styles.searchInputGroup}>
-              <SearchIcon size={16} color="#64748B" />
+          {/* Search + Location row */}
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1.25rem" }}>
+            <div
+              style={{
+                flex: "2 1 240px",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                background: "#FFFFFF",
+                border: "1px solid #CBD5E1",
+                borderRadius: "8px",
+                padding: "0.6rem 1rem",
+              }}
+            >
+              <SearchIcon size={15} color="#64748B" />
               <input
                 type="text"
-                placeholder="Search by service or specialty (e.g. Plumber, Wiring, AC)..."
+                placeholder="Search by service, skill, or name..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                style={styles.searchField}
+                style={{
+                  flex: 1,
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  fontSize: "0.9rem",
+                  color: palette.textPrimary,
+                  fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                }}
               />
               {searchInput && (
-                <button onClick={() => setSearchInput("")} style={styles.clearBtn} aria-label="Clear search">
+                <button
+                  onClick={() => setSearchInput("")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#64748B",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: 0,
+                  }}
+                  aria-label="Clear search"
+                >
                   <X size={14} />
                 </button>
               )}
             </div>
 
-            {/* City / Service Area Search */}
-            <form onSubmit={handleLocationSubmit} style={styles.locationInputGroup}>
-              <MapPin size={16} color="var(--primary)" />
+            <form
+              onSubmit={handleLocationSubmit}
+              className="sc-search-control"
+              style={{
+                flex: "1 1 180px",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                background: "#FFFFFF",
+                border: "1px solid #CBD5E1",
+                borderRadius: "8px",
+                padding: "0.4rem 0.5rem 0.4rem 1rem",
+              }}
+            >
+              <MapPin size={15} color="#64748B" />
               <input
                 type="text"
-                placeholder={`Current city: ${location}...`}
+                placeholder={`City: ${location}`}
                 value={locationInput}
                 onChange={(e) => setLocationInput(e.target.value)}
-                style={styles.searchField}
-              />
-              <button type="submit" style={styles.changeLocBtn}>
-                Update City
-              </button>
-            </form>
-
-          </div>
-
-        </div>
-
-        {/* Quick Category Filter Pills */}
-        <div style={styles.categoryPillsStrip}>
-          {[
-            { id: "", label: "All Services", Icon: null },
-            { id: "Electrician", label: "Electrician", Icon: Zap },
-            { id: "Plumber", label: "Plumber", Icon: Wrench },
-            { id: "Carpenter", label: "Carpenter", Icon: Hammer },
-            { id: "Painter", label: "Painter", Icon: Paintbrush },
-            { id: "Cleaning", label: "Cleaning", Icon: Sparkles },
-            { id: "AC Repair", label: "AC Repair", Icon: Snowflake },
-          ].map((cat) => {
-            const isSelected = category === cat.id;
-            const CatIcon = cat.Icon;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setCategory(cat.id)}
                 style={{
-                  ...styles.categoryQuickPill,
-                  background: isSelected ? "var(--primary)" : "white",
-                  color: isSelected ? "white" : "#374151",
-                  borderColor: isSelected ? "var(--primary)" : "#E2E8F0",
-                  fontWeight: isSelected ? 700 : 500,
-                  boxShadow: isSelected ? "0 2px 8px rgba(37,99,235,0.25)" : "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.4rem"
+                  flex: 1,
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  fontSize: "0.9rem",
+                  color: palette.textPrimary,
+                  fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                }}
+              />
+              <button
+                type="submit"
+                className="sc-search-action"
+                style={{
+                  background: palette.brandPrimary,
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "0.5rem 0.9rem",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                  fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
                 }}
               >
-                {CatIcon && <CatIcon size={14} color={isSelected ? "white" : "currentColor"} />}
-                <span>{cat.label}</span>
+                Update
               </button>
-            );
-          })}
+            </form>
+          </div>
+
+          {/* Category pills */}
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              overflowX: "auto",
+              paddingBottom: "0.5rem",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {[
+              { id: "", label: "All Services", Icon: null },
+              { id: "Electrician", label: "Electrician", Icon: Zap },
+              { id: "Plumber", label: "Plumber", Icon: Wrench },
+              { id: "Carpenter", label: "Carpenter", Icon: Hammer },
+              { id: "Painter", label: "Painter", Icon: Paintbrush },
+              { id: "Cleaning", label: "Cleaning", Icon: Sparkles },
+              { id: "AC Repair", label: "AC Repair", Icon: Snowflake },
+            ].map((cat) => {
+              const isSelected = category === cat.id;
+              const CatIcon = cat.Icon;
+              return (
+                <button
+                  key={cat.id}
+                  className="sc-search-filter"
+                  onClick={() => setCategory(cat.id)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0.45rem 1rem",
+                    borderRadius: "100px",
+                    border: "1px solid",
+                    background: isSelected ? palette.brandPrimary : "rgba(255, 255, 255, 0.09)",
+                    borderColor: isSelected ? palette.brandPrimary : "rgba(191, 219, 254, 0.28)",
+                    color: isSelected ? "#FFFFFF" : "#DCE8FF",
+                    fontSize: "0.82rem",
+                    fontWeight: isSelected ? 700 : 500,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 160ms ease",
+                    fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                  }}
+                >
+                  {CatIcon && <CatIcon size={13} />}
+                  <span>{cat.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* ── Main Listing Content ── */}
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem" }}>
-        
-        {/* Results Metadata Bar */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.75rem", flexWrap: "wrap", gap: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "1.1rem" }}>
-              {loading ? "Checking availability..." : isServiceAreaSupported ? `Showing verified professionals in ${location}` : `Coverage Notice for ${location}`}
-            </span>
-            {isServiceAreaSupported && (
-              <>
-                <span style={{ color: "#9CA3AF" }}>&bull;</span>
-                <span style={{ color: "#059669", fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                  <span style={styles.greenDot} /> Available for immediate booking
-                </span>
-              </>
-            )}
+      {/* Results area */}
+      <div className="sc-search-results">
+        {/* Filter row + results count */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "0.75rem",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <div style={{ fontSize: "0.88rem", color: palette.textSecondary, fontWeight: 600 }}>
+            {loading
+              ? "Checking availability..."
+              : isServiceAreaSupported
+              ? `${displayedWorkers.length} professional${displayedWorkers.length !== 1 ? "s" : ""} in ${location}`
+              : `Coverage notice for ${location}`}
           </div>
 
-          <div style={{ fontSize: "0.85rem", color: "#64748B" }}>
-            {displayedWorkers.length} {displayedWorkers.length === 1 ? "professional" : "professionals"} available
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+            <select
+              aria-label="Filter by max hourly price"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Any Price</option>
+              <option value="500">Under ₹500/hr</option>
+              <option value="1000">Under ₹1,000/hr</option>
+              <option value="2000">Under ₹2,000/hr</option>
+            </select>
+
+            <select
+              aria-label="Filter by minimum rating"
+              value={minRating}
+              onChange={(e) => setMinRating(Number(e.target.value))}
+              style={selectStyle}
+            >
+              <option value={0}>Any Rating</option>
+              <option value={4}>4.0+ Stars</option>
+              <option value={4.5}>4.5+ Stars</option>
+            </select>
+
+            <select
+              aria-label="Sort professionals"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="recommended">Recommended</option>
+              <option value="rating_desc">Top Rated</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="exp_desc">Most Experienced</option>
+            </select>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("");
+                  setCategory("");
+                  setMaxPrice("");
+                  setMinRating(0);
+                  setSortBy("recommended");
+                }}
+                style={{
+                  padding: "0.5rem 0.85rem",
+                  borderRadius: "8px",
+                  border: `1px solid ${palette.border}`,
+                  background: "transparent",
+                  color: palette.textSecondary,
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                }}
+              >
+                Reset
+              </button>
+            )}
           </div>
         </div>
 
-        {/* ── Condition A: Outside Supported Service Area Empty State ── */}
+        {/* Results */}
         {!isServiceAreaSupported ? (
-          <div style={styles.outsideAreaCard} className="animate-slide-up">
-            <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
-              <MapPin size={48} color="var(--primary)" />
-            </div>
-            <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0F172A", marginBottom: "0.5rem" }}>
-              Sorry, ServeConnect isn't available in your area yet.
+          /* Outside service area */
+          <div style={{ textAlign: "center", padding: "4rem 2rem" }}>
+            <MapPin size={40} color={palette.textMuted} style={{ marginBottom: "1rem" }} />
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: 800,
+                color: palette.textPrimary,
+                marginBottom: "0.5rem",
+              }}
+            >
+              ServeConnect isn't in your area yet
             </h2>
-            <p style={{ color: "#64748B", maxWidth: "560px", margin: "0 auto 1.5rem", fontSize: "0.95rem", lineHeight: 1.6 }}>
-              We're actively working to bring trusted, verified home services to <strong>{location}</strong>. In the meantime, try another nearby service area or check back soon.
+            <p
+              style={{
+                color: palette.textSecondary,
+                maxWidth: "480px",
+                margin: "0 auto 1.75rem",
+                fontSize: "0.95rem",
+                lineHeight: 1.6,
+              }}
+            >
+              We're actively growing to <strong>{location}</strong>. Try a nearby city or check back soon.
             </p>
 
-            {/* Quick Switch to Supported Cities */}
-            <div style={{ marginBottom: "1.75rem" }}>
-              <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.75rem" }}>
-                Switch to an Active Supported City
+            <div style={{ marginBottom: "1.5rem" }}>
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  color: palette.textMuted,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                Active Cities
               </div>
-              <div style={{ display: "flex", gap: "0.6rem", justifyContent: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", flexWrap: "wrap" }}>
                 {supportedCitiesList.map((c) => (
                   <button
                     key={c}
                     onClick={() => setLocation(c)}
-                    style={styles.supportedAreaBtn}
+                    style={{
+                      background: palette.bgSurface,
+                      border: `1px solid ${palette.border}`,
+                      padding: "0.5rem 1rem",
+                      borderRadius: "100px",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      color: palette.textPrimary,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.3rem",
+                      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                    }}
                   >
-                    <MapPin size={13} color="var(--primary)" style={{ marginRight: "0.3rem" }} />
-                    <span>{c}</span>
+                    <MapPin size={12} color={palette.brandPrimary} />
+                    {c}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Notification / Alert Action */}
-            <div style={{ display: "flex", gap: "0.85rem", justifyContent: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
               <button
                 onClick={() => setLocation("Patiala")}
-                className="btn btn-primary"
-                style={{ padding: "0.75rem 1.6rem", borderRadius: "12px", fontWeight: 700 }}
+                style={{
+                  padding: "0.7rem 1.5rem",
+                  borderRadius: "8px",
+                  background: palette.brandPrimary,
+                  color: "white",
+                  border: "none",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                  fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                }}
               >
-                Change Location to Patiala
+                Switch to Patiala
               </button>
               <button
                 onClick={() => {
                   setNotified(true);
                   setTimeout(() => setNotified(false), 4000);
                 }}
-                className="btn btn-secondary"
-                style={{ padding: "0.75rem 1.6rem", borderRadius: "12px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                style={{
+                  padding: "0.7rem 1.5rem",
+                  borderRadius: "8px",
+                  background: "transparent",
+                  color: palette.brandPrimary,
+                  border: `1px solid ${palette.brandPrimary}`,
+                  fontWeight: 600,
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                }}
               >
                 {notified ? (
-                  <>
-                    <Check size={16} />
-                    <span>We'll notify you!</span>
-                  </>
+                  <><Check size={16} /><span>We'll notify you!</span></>
                 ) : (
-                  <>
-                    <Bell size={16} />
-                    <span>Notify Me When Available</span>
-                  </>
+                  <><Bell size={16} /><span>Notify Me</span></>
                 )}
               </button>
             </div>
           </div>
         ) : loading ? (
-          /* ── Condition B: Skeleton Loader ── */
-          <div style={styles.cardsGrid}>
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
+          /* Skeleton rows */
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "1.1rem" }}>
+            {[1, 2, 3, 4, 5, 6].map((n) => <SkeletonRow key={n} />)}
           </div>
         ) : displayedWorkers.length === 0 ? (
-          /* ── Condition C: No matching category results ── */
-          <div style={styles.emptyStateCard} className="animate-slide-up">
-            <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
-              <SearchIcon size={48} color="#94A3B8" />
-            </div>
-            <h3 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", marginBottom: "0.5rem" }}>
-              No professionals matching "{category || searchInput}" in {location}
+          /* Empty state */
+          <div style={{ textAlign: "center", padding: "4rem 2rem" }}>
+            <SearchIcon size={40} color={palette.textMuted} style={{ marginBottom: "1rem" }} />
+            <h3
+              style={{
+                fontSize: "1.3rem",
+                fontWeight: 800,
+                color: palette.textPrimary,
+                marginBottom: "0.5rem",
+              }}
+            >
+              No professionals found
             </h3>
-            <p style={{ color: "#64748B", maxWidth: "440px", margin: "0 auto 1.5rem", fontSize: "0.92rem", lineHeight: 1.5 }}>
-              Try clearing your search keyword, resetting category filters, or selecting "All Services".
+            <p
+              style={{
+                color: palette.textSecondary,
+                maxWidth: "420px",
+                margin: "0 auto 1.5rem",
+                fontSize: "0.92rem",
+                lineHeight: 1.55,
+              }}
+            >
+              Try clearing your filters or selecting "All Services" to see everyone available.
             </p>
             <button
               onClick={() => {
                 setCategory("");
                 setSearchInput("");
+                setMaxPrice("");
+                setMinRating(0);
+                setSortBy("recommended");
               }}
-              style={styles.resetFilterBtn}
+              style={{
+                padding: "0.7rem 1.5rem",
+                background: palette.brandPrimary,
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontWeight: 700,
+                fontSize: "0.9rem",
+                cursor: "pointer",
+                fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+              }}
             >
               Reset Filters & Show All
             </button>
           </div>
         ) : (
-          /* ── Condition D: Professional Cards Grid ── */
-          <div style={styles.cardsGrid}>
+          /* Professional profile cards */
+          <div className="sc-search-grid">
             {displayedWorkers.map((worker) => {
-              const sc = categoryColors[worker.category] || { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", Icon: BriefcaseBusiness };
+              const sc = categoryColors[worker.category] || {
+                color: palette.brandPrimary,
+                bg: palette.brandSoft,
+                border: palette.border,
+                Icon: BriefcaseBusiness,
+              };
               const CatIcon = sc.Icon;
-              const isHovered = hoveredCardId === worker._id;
+              const isHovered = hoveredRowId === worker._id;
+              const name = worker.userId?.name || "Verified Professional";
 
               return (
-                <div
+                <article
+                  className="sc-professional-card"
                   key={worker._id}
-                  onMouseEnter={() => setHoveredCardId(worker._id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
+                  onMouseEnter={() => setHoveredRowId(worker._id)}
+                  onMouseLeave={() => setHoveredRowId(null)}
                   onClick={() => setSelectedWorker(worker)}
-                  style={{
-                    ...styles.card,
-                    borderColor: isHovered ? "var(--primary)" : "#E2E8F0",
-                    boxShadow: isHovered
-                      ? "0 14px 34px -8px rgba(37, 99, 235, 0.16), 0 4px 12px rgba(0,0,0,0.04)"
-                      : "0 2px 6px rgba(0, 0, 0, 0.04)",
-                    transform: isHovered ? "translateY(-5px)" : "none",
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`View profile and book ${worker.userId?.name}`}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       setSelectedWorker(worker);
                     }
                   }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`View profile and book ${name}`}
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: "350px",
+                    borderRadius: "20px",
+                    border: `1px solid ${isHovered ? "#A9C5FF" : palette.border}`,
+                    background: "#FFFFFF",
+                    boxShadow: isHovered
+                      ? "0 24px 48px rgba(30, 78, 140, .14), 0 6px 16px rgba(20,42,85,.06)"
+                      : "0 8px 24px rgba(25, 55, 110, .055)",
+                    transform: isHovered ? "translateY(-7px)" : "translateY(0)",
+                    transition: "transform 240ms cubic-bezier(.2,.8,.2,1), box-shadow 240ms ease, border-color 240ms ease",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
                 >
-                  {/* Category Accent Strip */}
-                  <div style={{ height: "4px", background: sc.color }} />
+                  <div
+                    className="sc-pro-card-cover"
+                    style={{
+                      height: "94px",
+                      flexShrink: 0,
+                      position: "relative",
+                      background: `linear-gradient(125deg, ${sc.bg} 0%, #F7FAFF 58%, #EAF1FF 100%)`,
+                      borderBottom: `1px solid ${sc.border}`,
+                    }}
+                  >
+                    <div style={{ position: "absolute", left: "1.25rem", top: "1rem", display: "inline-flex", alignItems: "center", gap: ".4rem", padding: ".35rem .65rem", borderRadius: "999px", background: "rgba(255,255,255,.88)", border: `1px solid ${sc.border}`, color: sc.color, fontSize: ".72rem", fontWeight: 750, fontFamily: "'Outfit', sans-serif" }}>
+                      <CatIcon size={12} /> {worker.category || "Home Services"}
+                    </div>
+                    <div style={{ position: "absolute", right: "1.15rem", top: ".9rem", display: "inline-flex", alignItems: "center", gap: ".25rem", padding: ".38rem .58rem", borderRadius: "9px", background: "#FFFFFF", color: "#A16207", boxShadow: "0 3px 10px rgba(15,23,42,.06)", fontWeight: 800, fontSize: ".8rem", fontFamily: "'Outfit', sans-serif" }}>
+                      <Star size={13} fill="#F59E0B" color="#F59E0B" />
+                      {Number(worker.rating) > 0 ? Number(worker.rating).toFixed(1) : "New"}
+                    </div>
+                  </div>
 
-                  <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", height: "calc(100% - 4px)", gap: "1rem" }}>
-                    
-                    {/* Top Row: Avatar, Name & Category */}
-                    <div style={{ display: "flex", gap: "0.9rem", alignItems: "flex-start" }}>
-                      
-                      {/* Photo Avatar with Fallback */}
-                      <div style={styles.cardAvatarWrapper}>
+                  <div style={{ padding: "0 1.25rem 1.15rem", display: "flex", flexDirection: "column", flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: ".75rem", marginTop: "-35px", marginBottom: ".8rem" }}>
+                      <div style={{ width: 76, height: 76, borderRadius: "19px", flexShrink: 0, overflow: "hidden", display: "grid", placeItems: "center", background: sc.bg, color: sc.color, border: "4px solid #FFFFFF", boxShadow: "0 5px 16px rgba(15,23,42,.12)", fontWeight: 850, fontSize: "1.45rem", fontFamily: "'Outfit', sans-serif" }}>
                         {worker.photo ? (
-                          <img
-                            src={worker.photo}
-                            alt={worker.userId?.name || "Professional"}
-                            style={styles.cardAvatarImg}
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                              if (e.target.nextSibling) e.target.nextSibling.style.display = "flex";
-                            }}
-                          />
-                        ) : null}
-                        <div
-                          style={{
-                            ...styles.cardAvatarFallback,
-                            background: `linear-gradient(135deg, ${sc.color}, #1E40AF)`,
-                            display: worker.photo ? "none" : "flex",
-                          }}
-                        >
-                          {worker.userId?.name?.charAt(0) || "P"}
-                        </div>
+                          <img src={worker.photo} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                        ) : name.charAt(0).toUpperCase()}
                       </div>
-
-                      {/* Name, Verified Badge & Category */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.2rem" }}>
-                          <h3 style={styles.cardName}>
-                            {worker.userId?.name || "Verified Professional"}
-                          </h3>
-                          {/* Animated Arrow Icon */}
-                          <ArrowRight
-                            size={16}
-                            color="var(--primary)"
-                            style={{
-                              transform: isHovered ? "translateX(4px)" : "translateX(0)",
-                              transition: "transform 0.2s ease",
-                              flexShrink: 0
-                            }}
-                          />
-                        </div>
-
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", marginBottom: "0.35rem" }}>
-                          <span style={{ ...styles.cardCategoryBadge, background: sc.bg, color: sc.color, borderColor: sc.border }}>
-                            <CatIcon size={12} style={{ marginRight: "0.25rem" }} />
-                            <span>{worker.category}</span>
-                          </span>
-                          <span style={styles.cardVerifiedTag}>
-                            <BadgeCheck size={12} color="#065F46" style={{ marginRight: "0.2rem" }} />
-                            <span>Verified</span>
-                          </span>
-                        </div>
-
-                        <div style={styles.cardLocationText}>
-                          <MapPin size={13} color="#EF4444" style={{ marginRight: "0.25rem" }} />
-                          <span>{worker.location || "City Service Zone"} &bull; <strong style={{ color: "#059669", fontWeight: 600 }}>Available Today</strong></span>
-                        </div>
-                      </div>
-
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: ".3rem", color: "#1E4E8C", background: "#EEF4FB", border: "1px solid #CBDDF2", borderRadius: "999px", padding: ".34rem .58rem", fontSize: ".69rem", fontWeight: 750, marginBottom: ".15rem", fontFamily: "'Outfit', sans-serif" }}>
+                        <BadgeCheck size={13} /> Approved professional
+                      </span>
                     </div>
 
-                    {/* Stats Strip: Rating, Experience & Pricing */}
-                    <div style={styles.cardStatsStrip}>
-                      <div style={styles.cardStatCell}>
-                        <StarRating rating={worker.rating} count={worker.reviewsCount || 28} />
-                        <div style={styles.cardStatSub}>Rating</div>
-                      </div>
-
-                      <div style={styles.cardStatDivider} />
-
-                      <div style={styles.cardStatCell}>
-                        <div style={styles.cardStatValue}>{worker.experience || 5} Yrs</div>
-                        <div style={styles.cardStatSub}>Experience</div>
-                      </div>
-
-                      <div style={styles.cardStatDivider} />
-
-                      <div style={styles.cardStatCell}>
-                        <div style={{ ...styles.cardStatValue, color: "#2563EB" }}>₹{worker.charges || 300}</div>
-                        <div style={styles.cardStatSub}>Per Hour</div>
-                      </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: ".4rem", marginBottom: ".3rem", minWidth: 0 }}>
+                      <h3 style={{ margin: 0, color: palette.textPrimary, fontSize: "1.08rem", fontWeight: 850, letterSpacing: "-.025em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif" }}>{name}</h3>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: ".35rem", color: palette.textMuted, fontSize: ".79rem", marginBottom: ".85rem" }}>
+                      <MapPin size={13} color={palette.brandSecondary} />
+                      <span>{worker.location || "Service Area"}</span>
+                      {worker.experience !== undefined && worker.experience !== null && worker.experience !== "" && (
+                        <><span style={{ color: "#CBD5E1", margin: "0 .15rem" }}>•</span><BriefcaseBusiness size={12} color={palette.brandSecondary} /><span>{worker.experience} yrs experience</span></>
+                      )}
                     </div>
 
-                    {/* Bio / Introduction Snippet */}
-                    <p style={styles.cardBioSnippet}>
-                      {worker.bio || `Experienced ${worker.category} providing reliable installation, diagnostics, and repairs with high safety standards.`}
+                    <p style={{
+                      color: palette.textSecondary,
+                      fontSize: ".84rem",
+                      lineHeight: 1.62,
+                      margin: "0 0 1.15rem",
+                      minHeight: "2.7em",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}>
+                      {worker.bio || `Experienced ${worker.category || "home service"} professional ready to help with your home service needs.`}
                     </p>
 
-                    {/* Skills / Portfolio Preview Pills */}
-                    <div style={styles.cardSkillsPreview}>
-                      {(worker.skills && worker.skills.length > 0 ? worker.skills.slice(0, 3) : ["Safety Inspected", "30-Day Guarantee", "Fast Service"]).map((skill, idx) => (
-                        <span key={idx} style={styles.cardMiniSkillPill}>
-                          &bull; {skill}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Bottom Primary Action Button */}
-                    <div style={{ marginTop: "auto", paddingTop: "0.5rem" }}>
+                    <div style={{ marginTop: "auto", paddingTop: ".95rem", borderTop: `1px solid ${palette.borderSubtle}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: ".75rem" }}>
+                      <div>
+                        <div style={{ color: palette.textMuted, fontSize: ".67rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: ".18rem", fontFamily: "'Outfit', sans-serif" }}>Starting rate</div>
+                        <div style={{ color: palette.textPrimary, fontSize: "1.2rem", fontWeight: 900, letterSpacing: "-.035em", fontFamily: "'Outfit', sans-serif" }}>₹{worker.charges || 0}<span style={{ color: palette.textMuted, fontSize: ".75rem", fontWeight: 650 }}>/hr</span></div>
+                      </div>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedWorker(worker);
-                        }}
-                        style={{
-                          ...styles.viewProfileBtn,
-                          background: isHovered ? "var(--primary)" : "#F8FAFC",
-                          color: isHovered ? "white" : "var(--primary)",
-                          borderColor: isHovered ? "var(--primary)" : "#BFDBFE",
-                          boxShadow: isHovered ? "0 4px 12px rgba(37,99,235,0.25)" : "none"
-                        }}
+                        type="button"
+                        className="sc-search-action sc-pro-card-cta"
+                        onClick={(e) => { e.stopPropagation(); setSelectedWorker(worker); }}
+                        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: ".45rem", padding: ".72rem 1.05rem", borderRadius: "10px", border: "1px solid #1A447A", background: "linear-gradient(135deg, #1E4E8C, #2A64AC)", color: "#FFFFFF", fontSize: ".82rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 4px 14px rgba(30, 78, 140, .22)", fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif" }}
                       >
-                        <span>View Profile & Book</span>
-                        <ArrowRight
-                          size={15}
-                          style={{
-                            transform: isHovered ? "translateX(3px)" : "none",
-                            transition: "transform 0.2s ease"
-                          }}
-                        />
+                        View profile <ArrowRight size={14} />
                       </button>
                     </div>
-
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
         )}
-
       </div>
 
-      {/* ── Full-Screen Profile & Booking Modal ── */}
+      {/* Profile modal */}
       {selectedWorker && (
         <WorkerProfileModal
           workerId={selectedWorker._id}
@@ -539,331 +831,6 @@ export default function Search() {
           onBookingSuccess={handleBookingSuccess}
         />
       )}
-
     </div>
   );
 }
-
-const styles = {
-  toastBanner: {
-    position: "fixed",
-    bottom: "2rem",
-    right: "2rem",
-    background: "#065F46",
-    color: "white",
-    padding: "0.9rem 1.4rem",
-    borderRadius: "14px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-    zIndex: 10000,
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    fontSize: "0.95rem",
-    fontWeight: 600,
-  },
-  toastCloseBtn: {
-    background: "transparent",
-    border: "none",
-    color: "rgba(255,255,255,0.8)",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "0.2rem",
-  },
-  searchHeaderWrapper: {
-    background: "white",
-    borderBottom: "1px solid #E2E8F0",
-    padding: "2.5rem 1.5rem 1rem",
-  },
-  searchHeaderInner: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "1.5rem",
-    marginBottom: "1.75rem",
-  },
-  badgeLabel: {
-    fontSize: "0.78rem",
-    fontWeight: 800,
-    letterSpacing: "1.5px",
-    color: "var(--primary, #2563EB)",
-    textTransform: "uppercase",
-    marginBottom: "0.4rem",
-  },
-  pageHeading: {
-    fontSize: "2.2rem",
-    fontWeight: 800,
-    color: "#0F172A",
-    letterSpacing: "-0.02em",
-    marginBottom: "0.4rem",
-  },
-  pageSubheading: {
-    color: "#475569",
-    fontSize: "0.95rem",
-    lineHeight: 1.55,
-  },
-  searchInputsContainer: {
-    display: "flex",
-    gap: "1rem",
-    flexWrap: "wrap",
-    width: "100%",
-  },
-  searchInputGroup: {
-    flex: 2,
-    minWidth: "280px",
-    display: "flex",
-    alignItems: "center",
-    gap: "0.6rem",
-    background: "#F8FAFC",
-    border: "1.5px solid #CBD5E1",
-    borderRadius: "14px",
-    padding: "0.75rem 1rem",
-  },
-  locationInputGroup: {
-    flex: 1,
-    minWidth: "260px",
-    display: "flex",
-    alignItems: "center",
-    gap: "0.6rem",
-    background: "#F8FAFC",
-    border: "1.5px solid #CBD5E1",
-    borderRadius: "14px",
-    padding: "0.4rem 0.5rem 0.4rem 1rem",
-  },
-  searchField: {
-    width: "100%",
-    border: "none",
-    background: "transparent",
-    outline: "none",
-    fontSize: "0.92rem",
-    color: "#0F172A",
-    fontWeight: 500,
-  },
-  changeLocBtn: {
-    background: "var(--primary, #2563EB)",
-    color: "white",
-    border: "none",
-    borderRadius: "10px",
-    padding: "0.6rem 1rem",
-    fontSize: "0.85rem",
-    fontWeight: 700,
-    whiteSpace: "nowrap",
-    cursor: "pointer",
-  },
-  clearBtn: {
-    background: "none",
-    border: "none",
-    color: "#94A3B8",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "0.2rem",
-  },
-  categoryPillsStrip: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    display: "flex",
-    gap: "0.6rem",
-    overflowX: "auto",
-    paddingBottom: "0.75rem",
-  },
-  categoryQuickPill: {
-    padding: "0.55rem 1rem",
-    borderRadius: "20px",
-    border: "1px solid",
-    fontSize: "0.85rem",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    transition: "all 0.15s ease",
-  },
-  greenDot: {
-    width: "7px",
-    height: "7px",
-    borderRadius: "50%",
-    background: "#10B981",
-    display: "inline-block",
-  },
-  cardsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-    gap: "1.5rem",
-  },
-  card: {
-    background: "white",
-    borderRadius: "20px",
-    border: "1.5px solid #E2E8F0",
-    overflow: "hidden",
-    cursor: "pointer",
-    transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
-    outline: "none",
-    display: "flex",
-    flexDirection: "column",
-  },
-  cardAvatarWrapper: {
-    position: "relative",
-    width: "60px",
-    height: "60px",
-    borderRadius: "16px",
-    overflow: "visible",
-    flexShrink: 0,
-  },
-  cardAvatarImg: {
-    width: "100%",
-    height: "100%",
-    borderRadius: "16px",
-    objectFit: "cover",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-  },
-  cardAvatarFallback: {
-    width: "100%",
-    height: "100%",
-    borderRadius: "16px",
-    color: "white",
-    fontWeight: 800,
-    fontSize: "1.6rem",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-  },
-  cardName: {
-    fontSize: "1.15rem",
-    fontWeight: 800,
-    color: "#0F172A",
-    letterSpacing: "-0.01em",
-  },
-  cardCategoryBadge: {
-    fontSize: "0.75rem",
-    fontWeight: 700,
-    padding: "0.15rem 0.55rem",
-    borderRadius: "12px",
-    border: "1px solid",
-    display: "inline-flex",
-    alignItems: "center",
-  },
-  cardVerifiedTag: {
-    fontSize: "0.72rem",
-    fontWeight: 700,
-    color: "#065F46",
-    background: "#ECFDF5",
-    padding: "0.15rem 0.55rem",
-    borderRadius: "12px",
-    border: "1px solid #A7F3D0",
-    display: "inline-flex",
-    alignItems: "center",
-  },
-  cardLocationText: {
-    fontSize: "0.82rem",
-    color: "#64748B",
-    marginTop: "0.1rem",
-    display: "flex",
-    alignItems: "center",
-  },
-  cardStatsStrip: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    background: "#F8FAFC",
-    padding: "0.6rem 0.85rem",
-    borderRadius: "12px",
-    border: "1px solid #E2E8F0",
-  },
-  cardStatCell: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    flex: 1,
-  },
-  cardStatValue: {
-    fontWeight: 800,
-    fontSize: "0.95rem",
-    color: "#0F172A",
-  },
-  cardStatSub: {
-    fontSize: "0.7rem",
-    color: "#64748B",
-    fontWeight: 500,
-    marginTop: "0.1rem",
-  },
-  cardStatDivider: {
-    width: "1px",
-    height: "22px",
-    background: "#E2E8F0",
-  },
-  cardBioSnippet: {
-    fontSize: "0.86rem",
-    color: "#475569",
-    lineHeight: 1.5,
-    display: "-webkit-box",
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: "vertical",
-    overflow: "hidden",
-  },
-  cardSkillsPreview: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.4rem",
-  },
-  cardMiniSkillPill: {
-    fontSize: "0.74rem",
-    color: "#64748B",
-    background: "#F1F5F9",
-    padding: "0.2rem 0.55rem",
-    borderRadius: "6px",
-    fontWeight: 500,
-  },
-  viewProfileBtn: {
-    width: "100%",
-    padding: "0.75rem",
-    borderRadius: "12px",
-    border: "1.5px solid",
-    fontWeight: 700,
-    fontSize: "0.92rem",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.5rem",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  outsideAreaCard: {
-    background: "white",
-    borderRadius: "20px",
-    padding: "4rem 2rem",
-    textAlign: "center",
-    border: "1.5px solid #E2E8F0",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
-  },
-  supportedAreaBtn: {
-    background: "#F8FAFC",
-    border: "1.5px solid #CBD5E1",
-    padding: "0.5rem 1rem",
-    borderRadius: "20px",
-    fontSize: "0.85rem",
-    fontWeight: 600,
-    color: "#334155",
-    cursor: "pointer",
-    display: "inline-flex",
-    alignItems: "center",
-    transition: "all 0.15s ease",
-  },
-  emptyStateCard: {
-    background: "white",
-    borderRadius: "20px",
-    padding: "4.5rem 2rem",
-    textAlign: "center",
-    border: "1.5px solid #E2E8F0",
-  },
-  resetFilterBtn: {
-    background: "var(--primary)",
-    color: "white",
-    border: "none",
-    borderRadius: "12px",
-    padding: "0.75rem 1.6rem",
-    fontWeight: 700,
-    fontSize: "0.92rem",
-    cursor: "pointer",
-  }
-};

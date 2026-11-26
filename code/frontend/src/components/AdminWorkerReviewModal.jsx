@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   BadgeCheck,
@@ -30,7 +31,7 @@ import {
 
 const categoryTheme = {
   Electrician: { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", Icon: Zap },
-  Plumber:     { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", Icon: Wrench },
+  Plumber:     { color: "#1E4E8C", bg: "#EEF4FB", border: "#D5E1F0", Icon: Wrench },
   Carpenter:   { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE", Icon: Hammer },
   Painter:     { color: "#DB2777", bg: "#FDF2F8", border: "#FBCFE8", Icon: Paintbrush },
   Cleaning:    { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", Icon: Sparkles },
@@ -78,6 +79,14 @@ export default function AdminWorkerReviewModal({
   const [lightboxImg, setLightboxImg] = useState(null);
 
   useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         if (lightboxImg) setLightboxImg(null);
@@ -91,9 +100,9 @@ export default function AdminWorkerReviewModal({
   if (!worker) return null;
 
   const catTheme = categoryTheme[worker.category] || {
-    color: "#2563EB",
-    bg: "#EFF6FF",
-    border: "#BFDBFE",
+    color: "#1E4E8C",
+    bg: "#EEF4FB",
+    border: "#D5E1F0",
     Icon: BriefcaseBusiness,
   };
   const CategoryIcon = catTheme.Icon;
@@ -124,14 +133,14 @@ export default function AdminWorkerReviewModal({
     onReject(worker._id, rejectReason);
   };
 
-  return (
+  return createPortal(
     <div style={styles.modalOverlay} onClick={onClose} role="dialog" aria-modal="true">
       <div style={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         
         {/* Header Bar */}
         <div style={styles.modalHeader}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--primary)", background: "#EFF6FF", padding: "0.25rem 0.65rem", borderRadius: "8px", border: "1px solid #BFDBFE" }}>
+            <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#1E4E8C", background: "#EEF4FB", padding: "0.25rem 0.65rem", borderRadius: "8px", border: "1px solid #D5E1F0" }}>
               APPLICATION REF #{worker._id.slice(-6).toUpperCase()}
             </span>
 
@@ -157,7 +166,7 @@ export default function AdminWorkerReviewModal({
 
             {isRecentlySubmitted && (
               <span style={styles.newBadge}>
-                <Sparkles size={11} color="#2563EB" />
+                <Sparkles size={11} color="#1E4E8C" />
                 <span>NEW SUBMISSION</span>
               </span>
             )}
@@ -171,9 +180,9 @@ export default function AdminWorkerReviewModal({
         {/* Profile Identity Strip */}
         <div style={styles.identityStrip}>
           <div style={styles.avatarWrapper}>
-            {worker.photo ? (
+            {(worker.profileImage || worker.photo) ? (
               <img
-                src={worker.photo}
+                src={worker.profileImage || worker.photo}
                 alt={workerName}
                 style={styles.avatarImg}
                 onError={(e) => {
@@ -186,7 +195,7 @@ export default function AdminWorkerReviewModal({
               style={{
                 ...styles.avatarFallback,
                 background: `linear-gradient(135deg, ${catTheme.color}, #1E40AF)`,
-                display: worker.photo ? "none" : "flex",
+                display: (worker.profileImage || worker.photo) ? "none" : "flex",
               }}
             >
               {workerName.charAt(0)}
@@ -242,7 +251,7 @@ export default function AdminWorkerReviewModal({
             <div style={{ fontSize: "0.72rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>
               Hourly Charges
             </div>
-            <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#2563EB", display: "flex", alignItems: "center" }}>
+            <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1E4E8C", display: "flex", alignItems: "center" }}>
               <IndianRupee size={16} />
               <span>{worker.charges || 300}</span>
               <span style={{ fontSize: "0.8rem", color: "#64748B", fontWeight: 500 }}>/hr</span>
@@ -280,13 +289,13 @@ export default function AdminWorkerReviewModal({
                 onClick={() => setActiveTab(t.id)}
                 style={{
                   ...styles.tabBtn,
-                  color: isSelected ? "var(--primary)" : "#64748B",
-                  borderColor: isSelected ? "var(--primary)" : "transparent",
+                  color: isSelected ? "#1E4E8C" : "#64748B",
+                  borderColor: isSelected ? "#1E4E8C" : "transparent",
                   fontWeight: isSelected ? 700 : 500,
-                  background: isSelected ? "#EFF6FF" : "transparent",
+                  background: isSelected ? "#EEF4FB" : "transparent",
                 }}
               >
-                <TabIcon size={15} color={isSelected ? "var(--primary)" : "#64748B"} />
+                <TabIcon size={15} color={isSelected ? "#1E4E8C" : "#64748B"} />
                 <span>{t.label}</span>
               </button>
             );
@@ -308,7 +317,7 @@ export default function AdminWorkerReviewModal({
                 </div>
                 <div style={styles.metricCard}>
                   <div style={styles.metricLabel}>Standard Hourly Charge</div>
-                  <div style={{ ...styles.metricVal, color: "#2563EB" }}>₹{worker.charges || 300}</div>
+                  <div style={{ ...styles.metricVal, color: "#1E4E8C" }}>₹{worker.charges || 300}</div>
                   <div style={styles.metricSub}>Direct customer rate</div>
                 </div>
                 <div style={styles.metricCard}>
@@ -328,7 +337,7 @@ export default function AdminWorkerReviewModal({
               {/* Professional Biography */}
               <div style={styles.sectionBox}>
                 <h4 style={styles.boxTitle}>
-                  <FileText size={15} color="var(--primary)" />
+                  <FileText size={15} color="#1E4E8C" />
                   <span>Applicant Statement & Biography</span>
                 </h4>
                 <p style={{ color: "#374151", fontSize: "0.92rem", lineHeight: 1.6, margin: 0 }}>
@@ -339,14 +348,14 @@ export default function AdminWorkerReviewModal({
               {/* Skills and Specialties */}
               <div style={styles.sectionBox}>
                 <h4 style={styles.boxTitle}>
-                  <BadgeCheck size={15} color="var(--primary)" />
+                  <BadgeCheck size={15} color="#1E4E8C" />
                   <span>Specialties & Core Competencies</span>
                 </h4>
                 {worker.skills && worker.skills.length > 0 ? (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                     {worker.skills.map((skill, idx) => (
                       <span key={idx} style={styles.skillPill}>
-                        <Check size={13} color="#2563EB" />
+                        <Check size={13} color="#1E4E8C" />
                         <span>{skill}</span>
                       </span>
                     ))}
@@ -361,7 +370,7 @@ export default function AdminWorkerReviewModal({
               {/* Service Offerings */}
               <div style={styles.sectionBox}>
                 <h4 style={styles.boxTitle}>
-                  <BriefcaseBusiness size={15} color="var(--primary)" />
+                  <BriefcaseBusiness size={15} color="#1E4E8C" />
                   <span>Configured Services Catalog</span>
                 </h4>
                 {worker.servicesOffered && worker.servicesOffered.length > 0 ? (
@@ -377,7 +386,7 @@ export default function AdminWorkerReviewModal({
                             <div style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.9rem" }}>{name}</div>
                             <div style={{ fontSize: "0.76rem", color: "#64748B", marginTop: "0.15rem" }}>Typical duration: {duration}</div>
                           </div>
-                          <div style={{ fontWeight: 800, color: "#2563EB", fontSize: "0.95rem" }}>
+                          <div style={{ fontWeight: 800, color: "#1E4E8C", fontSize: "0.95rem" }}>
                             ₹{price}
                           </div>
                         </div>
@@ -405,7 +414,7 @@ export default function AdminWorkerReviewModal({
                     Photos submitted as proof of technical expertise and completed home visits.
                   </p>
                 </div>
-                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#2563EB", background: "#EFF6FF", padding: "0.25rem 0.65rem", borderRadius: "12px" }}>
+                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1E4E8C", background: "#EEF4FB", padding: "0.25rem 0.65rem", borderRadius: "12px" }}>
                   {worker.portfolio?.length || 0} Submitted Photos
                 </span>
               </div>
@@ -531,7 +540,7 @@ export default function AdminWorkerReviewModal({
                 </p>
               </div>
 
-              {(!worker.documents || worker.documents.length === 0) && (!worker.certifications || worker.certifications.length === 0) ? (
+              {(!worker.documents || worker.documents.length === 0) && (!worker.certifications || worker.certifications.length === 0) && (!worker.certificates || worker.certificates.length === 0) ? (
                 <div style={styles.emptyTabBox}>
                   <ShieldCheck size={40} color="#CBD5E1" />
                   <h5 style={{ margin: "0.75rem 0 0.25rem", color: "#334155", fontWeight: 700 }}>
@@ -543,12 +552,29 @@ export default function AdminWorkerReviewModal({
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  {/* Documents List */}
-                  {(worker.documents || []).map((doc, idx) => (
-                    <div key={idx} style={styles.docItem}>
+                  {/* Documents & Certificates List */}
+                  {(() => {
+                    const allDocs = [
+                      ...(worker.documents || []),
+                      ...(worker.certificates || []).map(c => ({
+                        title: c.title || c.name || "Trade Certificate (Cloudinary)",
+                        docType: c.docType || "Verification Document",
+                        url: c.url,
+                        publicId: c.publicId
+                      }))
+                    ];
+                    const seen = new Set();
+                    const uniqueDocs = allDocs.filter(d => {
+                      const key = d.url || d.publicId || d.title;
+                      if (!key || seen.has(key)) return false;
+                      seen.add(key);
+                      return true;
+                    });
+                    return uniqueDocs.map((doc, idx) => (
+                      <div key={idx} style={styles.docItem}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         <div style={styles.docIconBox}>
-                          <FileText size={18} color="var(--primary)" />
+                          <FileText size={18} color="#1E4E8C" />
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, color: "#0F172A", fontSize: "0.9rem" }}>{doc.title}</div>
@@ -576,7 +602,8 @@ export default function AdminWorkerReviewModal({
                         )}
                       </div>
                     </div>
-                  ))}
+                  ));
+                })()}
 
                   {/* Certifications List */}
                   {(worker.certifications || []).map((cert, idx) => (
@@ -750,7 +777,8 @@ export default function AdminWorkerReviewModal({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -802,9 +830,9 @@ const styles = {
   newBadge: {
     fontSize: "0.72rem",
     fontWeight: 800,
-    background: "#EFF6FF",
-    color: "#2563EB",
-    border: "1px solid #BFDBFE",
+    background: "#EEF4FB",
+    color: "#1E4E8C",
+    border: "1px solid #D5E1F0",
     padding: "0.2rem 0.55rem",
     borderRadius: "6px",
     display: "inline-flex",
@@ -1059,7 +1087,7 @@ const styles = {
     width: "36px",
     height: "36px",
     borderRadius: "10px",
-    background: "#EFF6FF",
+    background: "#EEF4FB",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1079,7 +1107,7 @@ const styles = {
   viewDocLink: {
     fontSize: "0.76rem",
     fontWeight: 700,
-    color: "var(--primary)",
+    color: "#1E4E8C",
     textDecoration: "none",
     display: "inline-flex",
     alignItems: "center",

@@ -18,7 +18,6 @@ import {
   Lock,
   Mail,
   ShieldCheck,
-  IndianRupee,
 } from "lucide-react";
 
 const steps = ["Personal Info", "Professional Info", "Review & Submit"];
@@ -123,19 +122,19 @@ function WorkerRegistration() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%)", padding: "3rem 1rem" }}>
+    <div style={{ minHeight: "100vh", background: "var(--color-bg-soft, #F1F5FC)", padding: "3rem 1rem", fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
       <div style={{ maxWidth: "760px", margin: "0 auto" }}>
         
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <span style={{ display: "inline-block", background: "linear-gradient(135deg, var(--primary), #6366f1)", color: "white", padding: "0.3rem 1rem", borderRadius: "20px", fontSize: "0.8rem", fontWeight: 600, letterSpacing: "1px", marginBottom: "1rem" }}>
-            JOIN SERVECONNECT
+          <span style={{ display: "inline-block", background: "#EEF4FB", color: "#1E4E8C", border: "1px solid #D5E1F0", padding: "0.3rem 1rem", borderRadius: "20px", fontSize: "0.8rem", fontWeight: 700, letterSpacing: "1px", marginBottom: "1rem" }}>
+            PARTNER NETWORK
           </span>
-          <h1 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#1a1a2e", marginBottom: "0.75rem" }}>
+          <h1 style={{ fontSize: "2.35rem", fontWeight: 800, color: "var(--color-text-primary, #172554)", marginBottom: "0.75rem", letterSpacing: "-0.02em" }}>
             Register as a Professional
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "1.05rem" }}>
-            Join thousands of verified workers earning more with ServeConnect.
+          <p style={{ color: "var(--color-text-secondary, #64748B)", fontSize: "1rem", margin: 0 }}>
+            Join verified professionals setting their own rates and earning with ServeConnect.
           </p>
         </div>
 
@@ -146,24 +145,24 @@ function WorkerRegistration() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.4rem" }}>
                 <div style={{
                   width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.9rem",
-                  background: i < step ? "#10B981" : i === step ? "var(--primary)" : "#e5e7eb",
-                  color: i <= step ? "white" : "#9ca3af",
-                  boxShadow: i === step ? "0 0 0 4px rgba(99,102,241,0.15)" : "none",
+                  background: i < step ? "#059669" : i === step ? "#1E4E8C" : "#E2E8F0",
+                  color: i <= step ? "white" : "#64748B",
+                  boxShadow: i === step ? "0 0 0 4px rgba(30, 78, 140, 0.18)" : "none",
                   transition: "all 0.3s"
                 }}>
                   {i < step ? <Check size={16} color="white" /> : i + 1}
                 </div>
-                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: i === step ? "var(--primary)" : "#9ca3af", whiteSpace: "nowrap" }}>{label}</span>
+                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: i === step ? "#1E4E8C" : "#64748B", whiteSpace: "nowrap" }}>{label}</span>
               </div>
               {i < steps.length - 1 && (
-                <div style={{ width: "80px", height: "2px", background: i < step ? "#10B981" : "#e5e7eb", margin: "0 0.5rem", marginBottom: "1.5rem", transition: "background 0.3s" }} />
+                <div style={{ width: "80px", height: "2px", background: i < step ? "#059669" : "#E2E8F0", margin: "0 0.5rem", marginBottom: "1.5rem", transition: "background 0.3s" }} />
               )}
             </div>
           ))}
         </div>
 
         {/* Form Card */}
-        <div style={{ background: "white", borderRadius: "20px", boxShadow: "0 4px 30px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+        <div style={{ background: "#FFFFFF", borderRadius: "20px", border: "1px solid var(--color-border, #DCE6F5)", boxShadow: "0 4px 20px rgba(20, 43, 85, 0.05)", overflow: "hidden" }}>
           
           {/* Step 0: Personal Info */}
           {step === 0 && (
@@ -338,7 +337,7 @@ function WorkerRegistration() {
             <span>Secure & Private</span>
           </span>
           <span style={{ color: "#6b7280", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <Mail size={15} color="#2563EB" />
+            <Mail size={15} color="#1E4E8C" />
             <span>Email Notification on Approval</span>
           </span>
           <span style={{ color: "#6b7280", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>

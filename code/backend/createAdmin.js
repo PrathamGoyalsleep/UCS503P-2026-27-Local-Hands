@@ -1,5 +1,5 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 const bcrypt = require("bcryptjs");
 const connectDB = require("./config/db");
 const User = require("./models/User");
@@ -9,31 +9,32 @@ const createAdmin = async () => {
 
     try {
         const email = "admin@serveconnect.com";
+        const password = process.env.ADMIN_SEED_PASSWORD || "admin123";
         const existing = await User.findOne({ email });
 
         if (existing) {
-            // Make sure it has admin role
             existing.role = "admin";
+            existing.password = await bcrypt.hash(password, 10);
             await existing.save();
-            console.log("✓ Admin already exists — role updated to admin.");
+            console.log("✓ Admin already exists — role and password updated.");
             console.log("  Email:    admin@serveconnect.com");
-            console.log("  Password: Admin@1234");
+            console.log("  Role:     admin");
         } else {
-            const hashedPassword = await bcrypt.hash("Admin@1234", 10);
+            const hashedPassword = await bcrypt.hash(password, 10);
             await User.create({
-                name: "Admin",
+                name: "System Administrator",
                 email: "admin@serveconnect.com",
                 password: hashedPassword,
                 role: "admin",
             });
             console.log("✓ Admin user created successfully!");
             console.log("  Email:    admin@serveconnect.com");
-            console.log("  Password: Admin@1234");
+            console.log("  Role:     admin");
         }
 
-        console.log("\n→ Go to http://localhost:5173/login and login with the above credentials.");
-        console.log("→ The 'Admin Panel' link will appear in the Navbar automatically.");
-        process.exit();
+        console.log("\n→ Go to http://localhost:5173/login and login with admin@serveconnect.com / admin123.");
+        console.log("→ Automatic role detection will direct you to /admin.");
+        process.exit(0);
     } catch (error) {
         console.error("Error:", error.message);
         process.exit(1);
@@ -41,4 +42,3 @@ const createAdmin = async () => {
 };
 
 createAdmin();
-

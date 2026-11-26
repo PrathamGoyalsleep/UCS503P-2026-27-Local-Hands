@@ -1,245 +1,258 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --primary-light: #EFF6FF;
-  --bg-main: #F8FAFC;
-  --bg-card: #FFFFFF;
-  --text-main: #0F172A;
-  --text-muted: #64748B;
-  --border: #E2E8F0;
-  --border-focus: #93C5FD;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.12);
-  --shadow-hover: 0 14px 34px -8px rgba(37, 99, 235, 0.16), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --radius: 14px;
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: light;
+  
+  /* ── Core Brand & Neutrals (Refined Heritage Slate-Blue) ── */
+  --color-primary: #1E4E8C;
+  --color-primary-hover: #173E73;
+  --color-primary-active: #13325D;
+  --color-navy: #0E1B33;
+  --color-secondary: #31629E;
+  --color-indigo: #4A5EA8;
+  --color-teal: #0D9488;
+  --color-purple: #7C3AED;
+  --color-amber: #D97706;
+  
+  --color-bg-soft: #F4F7FC;
+  --color-bg-secondary: #EAF1FA;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F8FAFD;
+  
+  --color-text-primary: #0F1D38;
+  --color-text-secondary: #56677F;
+  --color-text-muted: #8E9DB2;
+  
+  --color-border: #D5E1F0;
+  --color-border-subtle: #E4ECF6;
+  
+  /* ── Status Tokens ── */
+  --status-pending-bg: #FEF3C7;
+  --status-pending-text: #B45309;
+  --status-pending-border: #FDE68A;
+  --status-pending-dot: #D97706;
+  
+  --status-accepted-bg: #EEF4FB;
+  --status-accepted-text: #19467E;
+  --status-accepted-border: #CBDDF2;
+  --status-accepted-dot: #1E4E8C;
+  
+  --status-completed-bg: #ECFDF5;
+  --status-completed-text: #047857;
+  --status-completed-border: #A7F3D0;
+  --status-completed-dot: #059669;
+  
+  --status-paid-bg: #F0FDFA;
+  --status-paid-text: #0F766E;
+  --status-paid-border: #99F6E4;
+  --status-paid-dot: #0D9488;
+  
+  --status-declined-bg: #FEF2F2;
+  --status-declined-text: #B91C1C;
+  --status-declined-border: #FECACA;
+  --status-declined-dot: #DC2626;
+
+  /* ── Functional Semantics ── */
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
+  --color-info: #1E4E8C;
+
+  /* ── Layout & Radii ── */
+  --container-max: 1680px;
+  --container-max-wide: 1920px;
+  --page-gutter: clamp(1rem, 3.5vw, 2.5rem);
+  
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(14, 27, 51, 0.05);
+  --shadow-card: 0 4px 18px rgba(14, 27, 51, 0.05), 0 1px 3px rgba(14, 27, 51, 0.02);
+  --shadow-hover: 0 14px 32px -4px rgba(14, 27, 51, 0.11), 0 4px 10px -2px rgba(14, 27, 51, 0.04);
+  --shadow-modal: 0 25px 60px -12px rgba(14, 27, 51, 0.32);
+  
+  /* ── Typography Tokens ── */
+  --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* ── Legacy Aliases ── */
+  --brand-primary: var(--color-primary);
+  --bg-primary: var(--color-bg-soft);
+  --bg-secondary: var(--color-bg-secondary);
+  --bg-surface: var(--color-surface);
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --border: var(--color-border);
+  --border-subtle: var(--color-border-subtle);
+  
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  margin: 0;
-  padding: 0;
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg-main);
-  color: var(--text-main);
-  line-height: 1.55;
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  background-color: #F4F7FC;
+  background-image: 
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(30, 78, 140, 0.09) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 95% 85%, rgba(13, 148, 136, 0.035) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 5% 50%, rgba(74, 94, 168, 0.04) 0%, transparent 60%),
+    radial-gradient(rgba(24, 52, 94, 0.08) 1.15px, transparent 1.15px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+  background-position: 0 0, 0 0, 0 0, 14px 14px;
+  background-attachment: scroll, scroll, scroll, fixed;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-  transition: color var(--transition-fast);
+h1, h2, h3, h4, h5, h6,
+.font-heading,
+.nav-logo-text {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
-ul {
-  list-style: none;
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button {
-  font-family: inherit;
   cursor: pointer;
-  border: none;
-  outline: none;
-  transition: all var(--transition-normal);
 }
 
-button:active {
-  transform: scale(0.98);
+button:disabled {
+  cursor: not-allowed;
 }
 
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 2px solid var(--primary);
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+picture,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+ul,
+ol {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-input, select, textarea {
-  font-family: inherit;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+::selection {
+  color: #ffffff;
+  background: var(--color-primary);
 }
 
-.page {
-  min-height: calc(100vh - 140px);
-}
-
-/* ── Common Buttons ── */
-.btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all var(--transition-normal);
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-  transform: translateY(-1px);
-}
-
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-.btn-secondary {
-  background: white;
-  color: var(--text-main);
-  border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-  background: #F1F5F9;
-  border-color: #CBD5E1;
-}
-
-.btn-secondary:active {
-  transform: scale(0.98);
-}
-
-.full-width {
+/* ── Common Layout Classes ── */
+.sc-container {
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-gutter);
+  padding-right: var(--page-gutter);
   width: 100%;
+  box-sizing: border-box;
 }
 
-/* ── Hover Lift Cards ── */
-.hover-lift {
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
-  border-color: var(--primary);
-}
-
-/* ── Form Inputs ── */
-.form-group {
-  margin-bottom: 1.25rem;
-  text-align: left;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: #1E293B;
-}
-
-.form-group input, .form-group select {
+.sc-container-wide {
+  max-width: var(--container-max-wide);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-gutter);
+  padding-right: var(--page-gutter);
   width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  font-size: 0.95rem;
-  outline: none;
-  background: white;
-  color: var(--text-main);
+  box-sizing: border-box;
 }
 
-.form-group input:focus, .form-group select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.form-error {
-  background: #FEE2E2;
-  color: #B91C1C;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border: 1px solid #FECACA;
-}
-
-/* ── Global Keyframe Animations ── */
+/* ── Global Motion Primitives ── */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @keyframes slideUpFade {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes modalScaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.25);
-    opacity: 0.6;
-  }
+  from { opacity: 0; transform: scale(.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
+.animate-fade-in { animation: fadeIn .24s ease both; }
+.animate-slide-up { animation: slideUpFade .35s cubic-bezier(.2, .75, .25, 1) both; }
+.animate-modal { animation: modalScaleIn .22s cubic-bezier(.2, .75, .25, 1) both; }
 
-/* ── Animation Utility Classes ── */
-.animate-fade-in {
-  animation: fadeIn 0.25s ease forwards;
-}
-
-.animate-slide-up {
-  animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-modal {
-  animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* ── Accessibility: Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  *,
+  *::before,
+  *::after {
     scroll-behavior: auto !important;
-  }
-  .hover-lift:hover {
-    transform: none !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
   }
 }
