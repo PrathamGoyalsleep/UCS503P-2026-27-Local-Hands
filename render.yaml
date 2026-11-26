@@ -53,7 +53,7 @@ services:
         fromService:
           type: web
           name: serveconnect-backend
-          property: url
+          envVarKey: RENDER_EXTERNAL_URL
       - key: VITE_STRIPE_PUBLISHABLE_KEY
         sync: false
       - key: VITE_RAZORPAY_KEY_ID
