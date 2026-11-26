@@ -11,3 +11,6 @@
 - [Week 5 : Customer Search & Admin APIs](./week5-customer-search.md)
 - [Week 6 : Scheduling & Booking APIs](./week6-bookings.md)
 - [Week 7 : Real-Time Live Chat & Socket.IO Engine](./week7-realtime-chat.md)
+- [Week 8 : Payment Gateway Integration & Media Uploads](./week8-payments-and-media.md)
+- [Week 9 : Ratings, Reviews & Profile Management](./week9-reviews-and-profile.md)
+- [Week 10 : Complete UI/UX Transformation & Large-Screen Responsiveness](./week10-ui-redesign-and-verification.md)
