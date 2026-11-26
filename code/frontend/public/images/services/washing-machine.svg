@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <rect width="128" height="128" rx="24" fill="#EFF6FF"/>
+  <ellipse cx="64" cy="108" rx="34" ry="6" fill="#1E293B" fill-opacity="0.10"/>
+  <rect x="26" y="20" width="76" height="84" rx="12" fill="url(#wmBody)" stroke="#CBD5E1" stroke-width="1.5"/>
+  <rect x="26" y="20" width="76" height="20" rx="12" fill="#E2E8F0"/>
+  <rect x="34" y="26" width="18" height="8" rx="2.5" fill="#FFFFFF"/>
+  <circle cx="84" cy="30" r="5" fill="#1E4E8C"/>
+  <circle cx="71" cy="30" r="2.5" fill="#64748B"/>
+  <circle cx="64" cy="70" r="24" fill="url(#wmRing)"/>
+  <circle cx="64" cy="70" r="18" fill="url(#wmGlass)"/>
+  <path d="M48 72C54 66 62 76 70 69C75 65 79 68 81 71C80 80 73 87 64 87C55 87 49 81 48 72Z" fill="#38BDF8" fill-opacity="0.55"/>
+  <ellipse cx="57" cy="60" rx="6" ry="3" transform="rotate(-25 57 60)" fill="#FFFFFF" fill-opacity="0.6"/>
+  <defs>
+    <linearGradient id="wmBody" x1="26" y1="20" x2="102" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#F1F5F9"/>
+    </linearGradient>
+    <linearGradient id="wmRing" x1="40" y1="46" x2="88" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#94A3B8"/><stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <linearGradient id="wmGlass" x1="46" y1="52" x2="82" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E0F2FE"/><stop offset="100%" stop-color="#BAE6FD"/>
+    </linearGradient>
+  </defs>
+</svg>

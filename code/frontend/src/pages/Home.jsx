@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLocationState } from "../context/LocationContext";
 import { getWorkers } from "../services/workerService";
@@ -19,16 +19,42 @@ import {
   CreditCard,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   BadgeCheck,
 } from "../components/icons";
 
+const SERVICE_IMAGE_POOL = [
+  "/images/services/appliance-repair.svg",
+  "/images/services/washing-machine.svg",
+  "/images/services/water-purifier.svg",
+  "/images/services/sofa-cleaning.svg",
+  "/images/services/geyser-repair.svg",
+  "/images/services/fan-repair.svg",
+  "/images/services/chimney-cleaning.svg",
+  "/images/services/cleaning.svg",
+  "/images/services/painter.svg",
+  "/images/services/plumber.jpg",
+  "/images/services/electrician.jpg",
+  "/images/services/carpenter.jpg",
+];
+
+const CATEGORY_IMAGE_MAP = {
+  "Appliance Repair": ["/images/services/appliance-repair.svg", "/images/services/washing-machine.svg", "/images/services/water-purifier.svg", "/images/services/geyser-repair.svg"],
+  "Cleaning": ["/images/services/cleaning.svg", "/images/services/sofa-cleaning.svg", "/images/services/chimney-cleaning.svg"],
+  "Electrician": ["/images/services/electrician.jpg", "/images/services/fan-repair.svg"],
+  "Plumber": ["/images/services/plumber.jpg", "/images/services/water-purifier.svg", "/images/services/geyser-repair.svg"],
+  "Carpenter": ["/images/services/carpenter.jpg"],
+  "Painter": ["/images/services/painter.svg"],
+};
+
 const SERVICE_CATEGORIES = [
-  { name: "Plumber", description: "Leaks, taps, pipes and bathroom repairs.", detail: "Fast help for everyday plumbing", icon: Wrench, tone: "blue" },
-  { name: "Electrician", description: "Wiring, lighting, fans and electrical faults.", detail: "Safe, reliable electrical work", icon: Zap, tone: "amber" },
-  { name: "Cleaning", description: "Deep cleaning, kitchens, bathrooms and sofas.", detail: "A fresher home, without the hassle", icon: Sparkles, tone: "violet" },
-  { name: "Carpenter", description: "Furniture, doors, locks and custom woodwork.", detail: "Repairs and made-to-fit solutions", icon: Hammer, tone: "orange" },
-  { name: "Painter", description: "Interior painting, touch-ups and waterproofing.", detail: "Give your space a fresh finish", icon: Paintbrush, tone: "rose" },
-  { name: "Appliance Repair", description: "AC, refrigerator, washer and appliance service.", detail: "Get essential appliances working again", icon: Settings, tone: "teal" },
+  { name: "Plumber", description: "Leaks, taps, pipes and bathroom repairs.", detail: "Fast help for everyday plumbing", icon: Wrench, image: "/images/services/plumber.jpg", tone: "blue" },
+  { name: "Electrician", description: "Wiring, lighting, fans and electrical faults.", detail: "Safe, reliable electrical work", icon: Zap, image: "/images/services/electrician.jpg", tone: "amber" },
+  { name: "Cleaning", description: "Deep cleaning, kitchens, bathrooms and sofas.", detail: "A fresher home, without the hassle", icon: Sparkles, image: "/images/services/cleaning.svg", tone: "violet" },
+  { name: "Carpenter", description: "Furniture, doors, locks and custom woodwork.", detail: "Repairs and made-to-fit solutions", icon: Hammer, image: "/images/services/carpenter.jpg", tone: "orange" },
+  { name: "Painter", description: "Interior painting, touch-ups and waterproofing.", detail: "Give your space a fresh finish", icon: Paintbrush, image: "/images/services/painter.svg", tone: "rose" },
+  { name: "Appliance Repair", description: "AC, refrigerator, washer and appliance service.", detail: "Get essential appliances working again", icon: Settings, image: "/images/services/appliance-repair.svg", tone: "teal" },
 ];
 
 const FAQS = [
@@ -97,10 +123,67 @@ export default function Home() {
     };
   }, [workers, supportedCities]);
 
-  const featuredWorkers = useMemo(
-    () => [...workers].sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0)).slice(0, 6),
-    [workers]
-  );
+  const [failedAvatars, setFailedAvatars] = useState({});
+
+  const featuredWorkers = useMemo(() => {
+    return [...workers]
+      .sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
+      .slice(0, 12)
+      .map((worker) => {
+        const matchedCategory = SERVICE_CATEGORIES.find((item) => item.name.toLowerCase() === String(worker.category || "").toLowerCase()) || SERVICE_CATEGORIES[0];
+        const avatar = worker.photo || worker.profileImage || worker.userId?.profileImage || "";
+        return { ...worker, _avatar: avatar, _matchedCategory: matchedCategory };
+      });
+  }, [workers]);
+
+  const essentialWorkers = useMemo(() => {
+    const priority = ["Appliance Repair", "Cleaning", "Electrician", "Plumber", "Carpenter", "Painter"];
+    const byCat = new Map();
+    [...workers]
+      .sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
+      .forEach((w) => {
+        const key = w.category || "Other";
+        if (!byCat.has(key)) byCat.set(key, []);
+        byCat.get(key).push(w);
+      });
+    // Interleave across categories so adjacent cards are varied
+    const interleaved = [];
+    const orderedKeys = [...priority.filter((k) => byCat.has(k)), ...[...byCat.keys()].filter((k) => !priority.includes(k))];
+    let added = true;
+    while (added && interleaved.length < 12) {
+      added = false;
+      for (const k of orderedKeys) {
+        const list = byCat.get(k);
+        if (list && list.length > 0 && interleaved.length < 12) {
+          interleaved.push(list.shift());
+          added = true;
+        }
+      }
+    }
+    const used = new Set();
+    return interleaved.map((worker) => {
+      const matchedCategory = SERVICE_CATEGORIES.find((item) => item.name.toLowerCase() === String(worker.category || "").toLowerCase()) || SERVICE_CATEGORIES[0];
+      const candidates = [
+        ...(CATEGORY_IMAGE_MAP[worker.category] || []),
+        ...(Array.isArray(worker.portfolio) ? worker.portfolio : []),
+        worker.photo,
+        worker.profileImage,
+        ...SERVICE_IMAGE_POOL,
+      ].filter(Boolean);
+      const uniqueImage = candidates.find((src) => !used.has(src)) || candidates[0];
+      if (uniqueImage) used.add(uniqueImage);
+      return { ...worker, _uniqueImage: uniqueImage, _matchedCategory: matchedCategory };
+    });
+  }, [workers]);
+
+  const featuredTrackRef = useRef(null);
+  const essentialsTrackRef = useRef(null);
+
+  const scrollTrack = (ref, direction) => {
+    if (!ref.current) return;
+    const distance = Math.max(280, Math.round(ref.current.clientWidth * 0.72));
+    ref.current.scrollBy({ left: direction * distance, behavior: "smooth" });
+  };
 
   const handleSearch = (event) => {
     event.preventDefault();
@@ -134,8 +217,8 @@ export default function Home() {
         .sc-floating-proof{display:none!important}
         .sc-metrics{position:relative;z-index:2;margin-top:-1px;padding:25px 0;background:transparent;border-bottom:1px solid #dce5f2}.sc-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.sc-metric{display:flex;align-items:center;gap:14px;min-height:88px;padding:17px 20px;border:1px solid #dce5f2;border-radius:15px;background:#ffffff;box-shadow:0 4px 18px rgba(14,27,51,.04)}.sc-metric-icon{display:grid;place-items:center;width:43px;height:43px;flex:0 0 43px;border-radius:13px;background:#EEF4FB;color:#1E4E8C}.sc-metric strong{display:block;color:#0F1D38;font-size:21px;line-height:1.15;font-weight:800}.sc-metric span{display:block;margin-top:4px;color:#77869d;font-size:10px;font-weight:700}
         .sc-section{padding:76px 0}.sc-section-soft{background:transparent}.sc-section-white{background:transparent}.sc-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px}.sc-kicker{display:block;margin-bottom:9px;color:#1E4E8C;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.sc-section-title{margin:0;color:#0F1D38;font-size:clamp(25px,2.5vw,34px);line-height:1.2;font-weight:800;letter-spacing:-.045em}.sc-section-subtitle{margin:9px 0 0;color:#56677F;font-size:13px;line-height:1.7}.sc-text-link{display:inline-flex;align-items:center;gap:7px;flex-shrink:0;color:#1E4E8C;text-decoration:none;font-size:12px;font-weight:800}.sc-text-link:hover{color:#133560}
-        .sc-service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}.sc-service-card{position:relative;display:flex;flex-direction:column;min-height:190px;padding:23px;border:1px solid #dce5f2;border-radius:17px;background:#ffffff;text-decoration:none;box-shadow:0 4px 18px rgba(14,27,51,.05);overflow:hidden;transition:transform .22s,border-color .22s,box-shadow .22s}.sc-service-card:after{content:"";position:absolute;right:-44px;top:-55px;width:140px;height:140px;border-radius:50%;background:var(--tone-bg);opacity:.78;transition:transform .25s}.sc-service-card:hover{transform:translateY(-5px);border-color:var(--tone-border);box-shadow:0 16px 32px rgba(28,68,137,.11)}.sc-service-card:hover:after{transform:scale(1.18)}.sc-service-top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between}.sc-service-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:var(--tone-bg);color:var(--tone-color);box-shadow:inset 0 0 0 1px var(--tone-border)}.sc-service-arrow{color:#9aabc5;transition:transform .2s,color .2s}.sc-service-card:hover .sc-service-arrow{color:var(--tone-color);transform:translateX(4px)}.sc-service-card h3{position:relative;z-index:1;margin:19px 0 6px;color:#0F1D38;font-size:15px;font-weight:800}.sc-service-card p{position:relative;z-index:1;margin:0;color:#56677F;font-size:11px;line-height:1.65}.sc-service-foot{position:relative;z-index:1;margin-top:auto;padding-top:13px;color:var(--tone-color);font-size:10px;font-weight:800}
-        .sc-worker-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.sc-worker-card{position:relative;display:flex;flex-direction:column;min-width:0;padding:21px;border:1px solid #dce5f2;border-radius:17px;background:#ffffff;box-shadow:0 4px 18px rgba(14,27,51,.05);overflow:hidden;transition:transform .22s,border-color .22s,box-shadow .22s}.sc-worker-card:before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--tone-color),var(--tone-border))}.sc-worker-card:hover{transform:translateY(-4px);border-color:var(--tone-border);box-shadow:0 16px 30px rgba(22,48,91,.09)}.sc-worker-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.sc-worker-person{display:flex;align-items:center;gap:12px;min-width:0}.sc-worker-avatar{display:grid;place-items:center;width:54px;height:54px;flex:0 0 54px;overflow:hidden;border-radius:15px;background:var(--tone-bg);color:var(--tone-color);font-size:19px;font-weight:800}.sc-worker-avatar img{width:100%;height:100%;object-fit:cover}.sc-worker-name{overflow:hidden;color:#0F1D38;font-size:13px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}.sc-worker-verified{display:inline-flex;align-items:center;gap:4px;margin-top:5px;color:#168b78;font-size:10px;font-weight:700}.sc-worker-rating{display:inline-flex;align-items:center;gap:4px;padding:6px 8px;border-radius:8px;background:#fff8e9;color:#8b641e;font-size:11px;font-weight:800;white-space:nowrap}.sc-worker-category{display:inline-flex;align-self:flex-start;margin-top:16px;padding:6px 9px;border-radius:7px;background:var(--tone-bg);color:var(--tone-color);font-size:10px;font-weight:800}.sc-worker-location{margin-top:9px;color:#8390a5;font-size:11px}.sc-worker-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #edf1f7}.sc-worker-price{color:#0F1D38;font-size:13px;font-weight:800}.sc-worker-price small{display:block;margin-top:2px;color:#98a3b5;font-size:9px;font-weight:600}.sc-worker-link{display:inline-flex;align-items:center;gap:6px;padding:9px 13px;border-radius:9px;background:#1E4E8C;color:#fff;text-decoration:none;font-size:10px;font-weight:800;transition:background .2s}.sc-worker-link:hover{background:#133560}
+        .sc-service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}.sc-service-card{position:relative;display:flex;flex-direction:column;min-height:190px;padding:23px;border:1px solid #dce5f2;border-radius:17px;background:#ffffff;text-decoration:none;box-shadow:0 4px 18px rgba(14,27,51,.05);overflow:hidden;transition:transform .22s,border-color .22s,box-shadow .22s}.sc-service-card:after{content:"";position:absolute;right:-44px;top:-55px;width:140px;height:140px;border-radius:50%;background:var(--tone-bg);opacity:.78;transition:transform .25s}.sc-service-card:hover{transform:translateY(-5px);border-color:var(--tone-border);box-shadow:0 16px 32px rgba(28,68,137,.11)}.sc-service-card:hover:after{transform:scale(1.18)}.sc-service-top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between}.sc-service-icon{display:grid;place-items:center;width:64px;height:64px;border-radius:16px;background:#F5F7FA;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 4px 12px rgba(15,23,42,.05);transition:transform .25s ease}.sc-service-icon img{width:100%;height:100%;object-fit:cover;display:block}.sc-service-card:hover .sc-service-icon{transform:scale(1.06)}.sc-service-arrow{color:#9aabc5;transition:transform .2s,color .2s}.sc-service-card:hover .sc-service-arrow{color:var(--tone-color);transform:translateX(4px)}.sc-service-card h3{position:relative;z-index:1;margin:19px 0 6px;color:#0F1D38;font-size:15px;font-weight:800}.sc-service-card p{position:relative;z-index:1;margin:0;color:#56677F;font-size:11px;line-height:1.65}.sc-service-foot{position:relative;z-index:1;margin-top:auto;padding-top:13px;color:var(--tone-color);font-size:10px;font-weight:800}
+        .sc-carousel-wrap{position:relative}.sc-worker-track{display:flex;gap:18px;overflow-x:auto;scroll-behavior:smooth;scroll-snap-type:x mandatory;padding:6px 4px 16px;scrollbar-width:none;-ms-overflow-style:none}.sc-worker-track::-webkit-scrollbar{display:none}.sc-worker-track .sc-worker-card{flex:0 0 280px;scroll-snap-align:start}.sc-carousel-btn{position:absolute;top:42%;transform:translateY(-50%);z-index:4;width:42px;height:42px;border-radius:50%;border:1px solid #dce5f2;background:#ffffff;color:#0F1D38;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 18px rgba(15,23,42,.14);transition:transform .18s,background .18s,box-shadow .18s}.sc-carousel-btn:hover{transform:translateY(-50%) scale(1.06);background:#EEF4FB;color:#1E4E8C;box-shadow:0 10px 24px rgba(30,78,140,.2)}.sc-carousel-prev{left:-16px}.sc-carousel-next{right:-16px}.sc-worker-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.sc-worker-card{position:relative;display:flex;flex-direction:column;min-width:0;padding:14px 16px 18px;border:1px solid #dce5f2;border-radius:18px;background:#ffffff;box-shadow:0 4px 18px rgba(14,27,51,.05);overflow:hidden;transition:transform .22s,border-color .22s,box-shadow .22s}.sc-worker-card:hover{transform:translateY(-4px);border-color:var(--tone-border);box-shadow:0 16px 30px rgba(22,48,91,.09)}.sc-worker-media{position:relative;width:100%;height:170px;border-radius:14px;overflow:hidden;background:#F5F7FA;margin-bottom:14px;border:1px solid #edf1f7}.sc-worker-media img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transition:transform .35s ease}.sc-worker-card:hover .sc-worker-media img{transform:scale(1.05)}.sc-worker-media-fallback{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,var(--tone-bg) 0%,#EEF4FB 100%);color:var(--tone-color)}.sc-worker-media-initials{width:64px;height:64px;border-radius:50%;background:#ffffff;color:var(--tone-color);border:2px solid var(--tone-border);display:grid;place-items:center;font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;box-shadow:0 6px 16px rgba(15,23,42,.08)}.sc-worker-media-cat{position:absolute;left:10px;top:10px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.94);color:var(--tone-color);border:1px solid var(--tone-border);font-size:10px;font-weight:800;box-shadow:0 2px 8px rgba(15,23,42,.08)}.sc-worker-rating{position:absolute;right:10px;top:10px;display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.96);color:#8b641e;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(15,23,42,.1)}.sc-worker-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.sc-worker-person{display:flex;align-items:center;gap:12px;min-width:0}.sc-worker-name{overflow:hidden;color:#0F1D38;font-size:15px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}.sc-worker-verified{display:inline-flex;align-items:center;gap:4px;margin-top:4px;color:#168b78;font-size:11px;font-weight:700}.sc-worker-location{margin-top:8px;color:#64748B;font-size:12px;display:flex;align-items:center;gap:5px}.sc-worker-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:14px;border-top:1px solid #edf1f7;margin-top:14px}.sc-worker-price{color:#0F1D38;font-size:15px;font-weight:800}.sc-worker-price small{display:block;margin-top:2px;color:#98a3b5;font-size:10px;font-weight:600}.sc-worker-link{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;background:#1E4E8C;color:#fff;text-decoration:none;font-size:11px;font-weight:800;transition:background .2s}.sc-worker-link:hover{background:#133560}
         .sc-empty{grid-column:1/-1;padding:34px;border:1px dashed #cbd8ec;border-radius:16px;background:#fff;text-align:center;color:#738199;font-size:13px}.sc-skeleton{height:205px;border-radius:17px;background:linear-gradient(90deg,#edf2fa 25%,#f7f9fd 38%,#edf2fa 62%);background-size:400% 100%;animation:scShimmer 1.4s ease infinite}
         .sc-steps-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}.sc-step-card{position:relative;min-height:210px;padding:25px;border:1px solid #dce5f2;border-radius:17px;background:#ffffff;box-shadow:0 4px 18px rgba(14,27,51,.04)}.sc-step-number{display:grid;place-items:center;width:43px;height:43px;margin-bottom:22px;border-radius:13px;background:var(--step-bg);color:var(--step-color);font-size:13px;font-weight:800}.sc-step-card h3{margin:0 0 8px;color:#0F1D38;font-size:15px;font-weight:800}.sc-step-card p{margin:0;color:#56677F;font-size:11px;line-height:1.75}
         .sc-benefit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}.sc-benefit{padding:22px;border:1px solid #dce5f2;border-radius:16px;background:#ffffff;box-shadow:0 4px 18px rgba(14,27,51,.04)}.sc-benefit-icon{display:grid;place-items:center;width:43px;height:43px;margin-bottom:17px;border-radius:13px;background:#EEF4FB;color:#1E4E8C}.sc-benefit h3{margin:0 0 7px;color:#0F1D38;font-size:13px;font-weight:800}.sc-benefit p{margin:0;color:#56677F;font-size:11px;line-height:1.7}
@@ -144,7 +227,7 @@ export default function Home() {
         @keyframes scEnter{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}@keyframes scShimmer{to{background-position:-200% 0}}
         @media(min-width:1600px){.sc-service-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.sc-worker-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.sc-faq-wrap{max-width:1100px}}
         @media(max-width:1050px){.sc-hero-grid{grid-template-columns:minmax(0,1fr) minmax(360px,.9fr);gap:34px}.sc-hero-title{font-size:clamp(40px,5vw,58px)}.sc-floating-proof{right:10px}.sc-benefit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-        @media(max-width:760px){.sc-container{width:min(100% - 36px,640px)}.sc-hero{padding:28px 0 52px}.sc-search-area{margin-bottom:42px}.sc-search-form{grid-template-columns:1fr;gap:0;padding:9px;border-radius:15px}.sc-city-field{height:43px;border-right:0;border-bottom:1px solid #e7edf5;padding:0 9px}.sc-query-field{height:48px;padding:0 9px}.sc-search-submit{width:100%;height:46px}.sc-hero-grid{grid-template-columns:1fr;gap:30px}.sc-hero-copy{max-width:none}.sc-hero-title{max-width:640px;font-size:clamp(40px,9vw,58px)}.sc-hero-description{font-size:13px}.sc-photo-shell{height:clamp(250px,62vw,380px)}.sc-floating-proof{top:12px;right:12px}.sc-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-section{padding:56px 0}.sc-service-grid,.sc-worker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-steps-grid{grid-template-columns:1fr}.sc-step-card{min-height:0}.sc-partner-inner{align-items:flex-start;flex-direction:column}.sc-partner-cta{padding:30px}}
+        @media(max-width:760px){.sc-container{width:min(100% - 36px,640px)}.sc-carousel-btn{display:none}.sc-worker-track .sc-worker-card{flex:0 0 250px}.sc-hero{padding:28px 0 52px}.sc-search-area{margin-bottom:42px}.sc-search-form{grid-template-columns:1fr;gap:0;padding:9px;border-radius:15px}.sc-city-field{height:43px;border-right:0;border-bottom:1px solid #e7edf5;padding:0 9px}.sc-query-field{height:48px;padding:0 9px}.sc-search-submit{width:100%;height:46px}.sc-hero-grid{grid-template-columns:1fr;gap:30px}.sc-hero-copy{max-width:none}.sc-hero-title{max-width:640px;font-size:clamp(40px,9vw,58px)}.sc-hero-description{font-size:13px}.sc-photo-shell{height:clamp(250px,62vw,380px)}.sc-floating-proof{top:12px;right:12px}.sc-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-section{padding:56px 0}.sc-service-grid,.sc-worker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-steps-grid{grid-template-columns:1fr}.sc-step-card{min-height:0}.sc-partner-inner{align-items:flex-start;flex-direction:column}.sc-partner-cta{padding:30px}}
         @media(max-width:520px){.sc-container{width:calc(100% - 30px)}.sc-search-caption{text-align:left;font-size:9px}.sc-hero-title{font-size:39px;letter-spacing:-.055em}.sc-hero-actions{align-items:stretch}.sc-primary-cta,.sc-secondary-cta{flex:1}.sc-trust-row{gap:12px}.sc-photo-shell{height:245px;border-radius:17px}.sc-photo-note{left:10px;bottom:10px}.sc-metric-grid{gap:9px}.sc-metric{min-height:76px;padding:12px;gap:9px}.sc-metric-icon{width:35px;height:35px;flex-basis:35px}.sc-metric strong{font-size:17px}.sc-metric span{font-size:9px}.sc-section-heading{align-items:flex-start;flex-direction:column}.sc-service-grid,.sc-worker-grid,.sc-benefit-grid{grid-template-columns:1fr}.sc-service-card{min-height:165px}.sc-partner-actions{width:100%}.sc-partner-actions a{flex:1}}
         @media(prefers-reduced-motion:reduce){.sc-page *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
       `}</style>
@@ -215,7 +298,7 @@ export default function Home() {
               const Icon = category.icon;
               const tone = TONES[category.tone];
               return <Link className="sc-service-card" key={category.name} to={`/search?category=${encodeURIComponent(category.name)}&location=${encodeURIComponent(heroCity)}`} style={{ "--tone-bg": tone.bg, "--tone-color": tone.color, "--tone-border": tone.border }}>
-                <div className="sc-service-top"><span className="sc-service-icon"><Icon size={22} /></span><ArrowRight className="sc-service-arrow" size={18} /></div>
+                <div className="sc-service-top"><span className="sc-service-icon"><img src={category.image} alt={category.name} loading="lazy" /></span><ArrowRight className="sc-service-arrow" size={18} /></div>
                 <h3>{category.name}</h3><p>{category.description}</p><span className="sc-service-foot">{category.detail}</span>
               </Link>;
             })}
@@ -229,22 +312,80 @@ export default function Home() {
             <div><span className="sc-kicker">Local talent, trusted service</span><h2 className="sc-section-title">Meet professionals near you</h2><p className="sc-section-subtitle">Compare profiles, ratings and hourly rates before you book.</p></div>
             <Link className="sc-text-link" to="/search">Browse all professionals <ArrowRight size={15} /></Link>
           </div>
-          <div className="sc-worker-grid">
-            {loadingWorkers ? [1, 2, 3].map((item) => <div className="sc-skeleton" key={item} />) : featuredWorkers.length === 0 ? <div className="sc-empty">No approved professionals are listed yet. Check back soon or register as a service professional.</div> : featuredWorkers.map((worker) => {
-              const name = worker.userId?.name || "ServeConnect Professional";
-              const avatar = worker.profileImage || worker.userId?.profileImage;
-              const categoryIndex = SERVICE_CATEGORIES.findIndex((item) => item.name.toLowerCase() === String(worker.category || "").toLowerCase());
-              const tone = TONES[SERVICE_CATEGORIES[Math.max(0, categoryIndex)]?.tone || "blue"];
-              return <article className="sc-worker-card" key={worker._id} style={{ "--tone-bg": tone.bg, "--tone-color": tone.color, "--tone-border": tone.border }}>
-                <div className="sc-worker-head"><div className="sc-worker-person"><div className="sc-worker-avatar">{avatar ? <img src={avatar} alt={name} /> : name.charAt(0).toUpperCase()}</div><div style={{ minWidth: 0 }}><div className="sc-worker-name">{name}</div><div className="sc-worker-verified"><BadgeCheck size={13} /> Verified professional</div></div></div><span className="sc-worker-rating"><Star size={12} fill="#E7A52A" color="#E7A52A" /> {Number(worker.rating) > 0 ? Number(worker.rating).toFixed(1) : "New"}</span></div>
-                {worker.category && <span className="sc-worker-category">{worker.category}</span>}
-                <div className="sc-worker-location">{worker.location || heroCity}</div>
-                <div className="sc-worker-bottom"><div className="sc-worker-price">{formatPrice(worker.charges)}<small>Transparent hourly pricing</small></div><Link className="sc-worker-link" to={`/worker/${worker._id}`}>View profile <ArrowRight size={13} /></Link></div>
-              </article>;
-            })}
+          <div className="sc-carousel-wrap">
+            {!loadingWorkers && featuredWorkers.length > 0 && (
+              <button type="button" className="sc-carousel-btn sc-carousel-prev" aria-label="Scroll professionals left" onClick={() => scrollTrack(featuredTrackRef, -1)}><ChevronLeft size={20} /></button>
+            )}
+            <div className="sc-worker-track" ref={featuredTrackRef}>
+              {loadingWorkers ? [1, 2, 3, 4].map((item) => <div className="sc-skeleton" style={{ flex: "0 0 280px" }} key={item} />) : featuredWorkers.length === 0 ? <div className="sc-empty">No approved professionals are listed yet. Check back soon or register as a service professional.</div> : featuredWorkers.map((worker) => {
+                const name = worker.userId?.name || "ServeConnect Professional";
+                const matchedCategory = worker._matchedCategory || SERVICE_CATEGORIES[0];
+                const tone = TONES[matchedCategory?.tone || "blue"];
+                const showPhoto = Boolean(worker._avatar) && !failedAvatars[worker._id];
+                const initials = name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("") || "SC";
+                return <article className="sc-worker-card" key={worker._id} style={{ "--tone-bg": tone.bg, "--tone-color": tone.color, "--tone-border": tone.border }}>
+                  <div className="sc-worker-media">
+                    {showPhoto ? (
+                      <img src={worker._avatar} alt={name} loading="lazy" onError={() => setFailedAvatars((prev) => ({ ...prev, [worker._id]: true }))} />
+                    ) : (
+                      <div className="sc-worker-media-fallback">
+                        <div className="sc-worker-media-initials">{initials}</div>
+                      </div>
+                    )}
+                    {worker.category && <span className="sc-worker-media-cat">{worker.category}</span>}
+                    <span className="sc-worker-rating"><Star size={12} fill="#E7A52A" color="#E7A52A" /> {Number(worker.rating) > 0 ? Number(worker.rating).toFixed(1) : "New"}</span>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="sc-worker-name">{name}</div>
+                    <div className="sc-worker-verified"><BadgeCheck size={13} /> Verified professional</div>
+                  </div>
+                  <div className="sc-worker-location"><MapPin size={12} /> {worker.location || heroCity}{worker.experience ? ` • ${worker.experience} yrs exp` : ""}</div>
+                  <div className="sc-worker-bottom"><div className="sc-worker-price">{formatPrice(worker.charges)}<small>Transparent hourly pricing</small></div><Link className="sc-worker-link" to={`/worker/${worker._id}`}>View profile <ArrowRight size={13} /></Link></div>
+                </article>;
+              })}
+            </div>
+            {!loadingWorkers && featuredWorkers.length > 0 && (
+              <button type="button" className="sc-carousel-btn sc-carousel-next" aria-label="Scroll professionals right" onClick={() => scrollTrack(featuredTrackRef, 1)}><ChevronRight size={20} /></button>
+            )}
           </div>
         </div>
       </section>
+
+      {essentialWorkers.length > 0 && (
+        <section className="sc-section sc-section-soft" style={{ paddingTop: 0 }}>
+          <div className="sc-container">
+            <div className="sc-section-heading">
+              <div><span className="sc-kicker">Repairs &amp; home essentials</span><h2 className="sc-section-title">Appliance repair, cleaning &amp; maintenance</h2><p className="sc-section-subtitle">Scroll through ready-to-book specialists for everyday fixes and upkeep.</p></div>
+              <Link className="sc-text-link" to="/search">See all <ArrowRight size={15} /></Link>
+            </div>
+            <div className="sc-carousel-wrap">
+              <button type="button" className="sc-carousel-btn sc-carousel-prev" aria-label="Scroll essential services left" onClick={() => scrollTrack(essentialsTrackRef, -1)}><ChevronLeft size={20} /></button>
+              <div className="sc-worker-track" ref={essentialsTrackRef}>
+                {essentialWorkers.map((worker) => {
+                  const name = worker.userId?.name || "ServeConnect Specialist";
+                  const matchedCategory = worker._matchedCategory || SERVICE_CATEGORIES[0];
+                  const tone = TONES[matchedCategory?.tone || "blue"];
+                  const cardImage = worker._uniqueImage;
+                  return <article className="sc-worker-card" key={`ess-${worker._id}`} style={{ "--tone-bg": tone.bg, "--tone-color": tone.color, "--tone-border": tone.border }}>
+                    <div className="sc-worker-media">
+                      <img src={cardImage} alt={worker.category || name} loading="lazy" onError={(e) => { e.currentTarget.src = "/images/services/appliance-repair.svg"; }} />
+                      {worker.category && <span className="sc-worker-media-cat">{worker.category}</span>}
+                      <span className="sc-worker-rating"><Star size={12} fill="#E7A52A" color="#E7A52A" /> {Number(worker.rating) > 0 ? Number(worker.rating).toFixed(1) : "New"}</span>
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="sc-worker-name">{worker.category ? `${worker.category} by ${name}` : name}</div>
+                      <div className="sc-worker-verified"><BadgeCheck size={13} /> {worker.experience ? `${worker.experience} yrs experience` : "Verified specialist"}</div>
+                    </div>
+                    <div className="sc-worker-location"><MapPin size={12} /> {worker.location || heroCity}</div>
+                    <div className="sc-worker-bottom"><div className="sc-worker-price">{formatPrice(worker.charges)}<small>Starts at</small></div><Link className="sc-worker-link" to={`/worker/${worker._id}`}>Book <ArrowRight size={13} /></Link></div>
+                  </article>;
+                })}
+              </div>
+              <button type="button" className="sc-carousel-btn sc-carousel-next" aria-label="Scroll essential services right" onClick={() => scrollTrack(essentialsTrackRef, 1)}><ChevronRight size={20} /></button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="sc-section sc-section-soft">
         <div className="sc-container">

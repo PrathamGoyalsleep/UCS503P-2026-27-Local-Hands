@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <rect width="128" height="128" rx="24" fill="#FFFBEB"/>
+  <ellipse cx="64" cy="108" rx="30" ry="6" fill="#1E293B" fill-opacity="0.10"/>
+  <rect x="34" y="20" width="60" height="72" rx="20" fill="url(#geyserBody)" stroke="#CBD5E1" stroke-width="1.5"/>
+  <rect x="46" y="64" width="36" height="14" rx="7" fill="#0F172A"/>
+  <circle cx="56" cy="71" r="3" fill="#EF4444"/>
+  <circle cx="72" cy="71" r="3" fill="#22C55E"/>
+  <rect x="48" y="92" width="7" height="14" rx="2" fill="#3B82F6"/>
+  <rect x="73" y="92" width="7" height="14" rx="2" fill="#EF4444"/>
+  <defs>
+    <linearGradient id="geyserBody" x1="34" y1="20" x2="94" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+  </defs>
+</svg>

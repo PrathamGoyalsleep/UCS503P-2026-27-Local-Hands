@@ -15,11 +15,25 @@ const app    = express();
 const server = http.createServer(app);
 
 // --------------------------------------------------
-// Socket.io — real-time chat
+// Socket.io — real-time chat & production CORS
 // --------------------------------------------------
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+const corsOrigin = (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const normalized = origin.replace(/\/+$/, "");
+    if (allowedOrigins.includes(normalized) || allowedOrigins.includes("*")) {
+        return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+};
+
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || "http://localhost:5173",
+        origin: corsOrigin,
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -183,7 +197,7 @@ if (process.env.NODE_ENV !== "test") {
     connectDB();
 }
 
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json({
     verify: (req, res, buf) => {
         req.rawBody = buf;
@@ -191,6 +205,12 @@ app.use(express.json({
 }));
 
 app.get("/", (req, res) => res.send("ServeConnect Backend is running"));
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "ok",
+        dbConnected: mongoose.connection.readyState === 1
+    });
+});
 
 app.use("/api/auth",     require("./routes/authRoutes"));
 app.use("/api/workers",  require("./routes/workerRoutes"));

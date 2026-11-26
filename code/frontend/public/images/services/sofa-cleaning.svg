@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <rect width="128" height="128" rx="24" fill="#F5F3FF"/>
+  <ellipse cx="64" cy="104" rx="42" ry="7" fill="#1E293B" fill-opacity="0.10"/>
+  <!-- Sofa Base -->
+  <rect x="20" y="60" width="88" height="32" rx="10" fill="url(#sofaBase)"/>
+  <!-- Backrest -->
+  <rect x="24" y="38" width="80" height="28" rx="10" fill="url(#sofaBack)"/>
+  <!-- Armrests -->
+  <rect x="16" y="52" width="16" height="40" rx="8" fill="#475569"/>
+  <rect x="96" y="52" width="16" height="40" rx="8" fill="#475569"/>
+  <!-- Sparkles -->
+  <path d="M88 26L90 32L96 34L90 36L88 42L86 36L80 34L86 32Z" fill="#7C3AED"/>
+  <path d="M36 24L37.5 28L41.5 29.5L37.5 31L36 35L34.5 31L30.5 29.5L34.5 28Z" fill="#38BDF8"/>
+  <defs>
+    <linearGradient id="sofaBase" x1="20" y1="60" x2="108" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#64748B"/><stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="sofaBack" x1="24" y1="38" x2="104" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#94A3B8"/><stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+</svg>
