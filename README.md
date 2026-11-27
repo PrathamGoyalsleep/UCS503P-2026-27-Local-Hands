@@ -2,7 +2,9 @@
 
 > **UCS503P — Software Engineering Project (2026-27 ODD)**  
 > **Thapar Institute of Engineering and Technology, Patiala**  
-> **Repository:** `UCS503P-2026-27-Local-Hands`
+> **Repository:** `UCS503P-2026-27-Local-Hands`  
+> **Live Website:** [https://serveconnect-frontend.onrender.com](https://serveconnect-frontend.onrender.com)  
+> **Live API:** [https://serveconnect-backend-ucjp.onrender.com/health](https://serveconnect-backend-ucjp.onrender.com/health)
 
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)]()
 [![Stack](https://img.shields.io/badge/Stack-MERN%20%2B%20Socket.IO%20%2B%20Stripe-blue.svg)]()
